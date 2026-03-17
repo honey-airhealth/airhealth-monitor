@@ -3,7 +3,7 @@
 **Turning Environmental Data into Meaningful Health Insights**
 
 > Team 11 — Honey
-> Karnpon POOCHITKANON · Thitirat SOMSUPANGSRI
+> · Karnpon POOCHITKANON · Thitirat SOMSUPANGSRI
 
 ---
 
