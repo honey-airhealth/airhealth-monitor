@@ -1,6 +1,23 @@
 import { Users, Heart } from 'lucide-react';
 import { Card } from './ui/card';
 
+const teamMembers = [
+  {
+    name: 'Karnpon POOCHITKANON',
+    studentId: '6710545458',
+    imageSrc: '/team/vince.jpg',
+    imageAlt: 'Vince',
+    fallbackEmoji: '👨‍💻',
+  },
+  {
+    name: 'Thitirat SOMSUPANGSRI',
+    studentId: '6710545563',
+    imageSrc: '/team/tal.jpg',
+    imageAlt: 'Tal',
+    fallbackEmoji: '👩‍💻',
+  },
+] as const;
+
 export function Team() {
   return (
     <div className="py-10 md:py-12 px-4 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
@@ -43,24 +60,34 @@ export function Team() {
             
             <div className="max-w-2xl mx-auto mb-6">
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="bg-white/20 backdrop-blur-sm p-3.5 md:p-4 rounded-2xl border-2 border-white/30 hover:bg-white/30 transition-all hover:-translate-y-1">
-                  <div className="text-3xl mb-2">👨‍💻</div>
-                  <p className="text-white text-base md:text-lg font-bold">
-                    Karnpon POOCHITKANON
-                  </p>
-                  <p className="mt-1.5 text-[13px] md:text-sm text-white/85 font-medium">
-                    6710545458
-                  </p>
-                </div>
-                <div className="bg-white/20 backdrop-blur-sm p-3.5 md:p-4 rounded-2xl border-2 border-white/30 hover:bg-white/30 transition-all hover:-translate-y-1">
-                  <div className="text-3xl mb-2">👩‍💻</div>
-                  <p className="text-white text-base md:text-lg font-bold">
-                    Thitirat SOMSUPANGSRI
-                  </p>
-                  <p className="mt-1.5 text-[13px] md:text-sm text-white/85 font-medium">
-                    6710545563
-                  </p>
-                </div>
+                {teamMembers.map((member) => (
+                  <div
+                    key={member.studentId}
+                    className="bg-white/20 backdrop-blur-sm p-3.5 md:p-4 rounded-2xl border-2 border-white/30 hover:bg-white/30 transition-all hover:-translate-y-1"
+                  >
+                    <div className="mb-3 flex justify-center">
+                      <div className="flex size-16 items-center justify-center overflow-hidden rounded-full border-2 border-white/40 bg-white/20 text-3xl shadow-lg">
+                        <img
+                          src={member.imageSrc}
+                          alt={member.imageAlt}
+                          className="size-full object-cover"
+                          onError={(event) => {
+                            event.currentTarget.style.display = 'none';
+                            const fallback = event.currentTarget.nextElementSibling as HTMLSpanElement | null;
+                            if (fallback) fallback.style.display = 'inline';
+                          }}
+                        />
+                        <span style={{ display: 'none' }}>{member.fallbackEmoji}</span>
+                      </div>
+                    </div>
+                    <p className="text-white text-base md:text-lg font-bold">
+                      {member.name}
+                    </p>
+                    <p className="mt-1.5 text-[13px] md:text-sm text-white/85 font-medium">
+                      {member.studentId}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
             
