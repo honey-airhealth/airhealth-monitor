@@ -62,6 +62,65 @@ The API delivers processed, health-relevant outputs rather than raw measurements
 
 ---
 
+## Frontend
+
+A React dashboard scaffold now lives in `frontend/`. It is built for the AirHealth Monitor use case and currently uses mock data shaped around the existing sensor payloads:
+
+- PMS7003 for PM1.0 / PM2.5 / PM10
+- KY-015 for temperature and humidity
+- MQ-2 for smoke / combustible gas
+- MQ-9 for CO-related readings
+
+### Run the React app
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Then open the local Vite URL, usually `http://localhost:5173`.
+
+### Production build
+
+```bash
+cd frontend
+npm run build
+```
+
+### Next integration step
+
+Replace the mock snapshot in `frontend/src/data/mockData.js` with data fetched from your backend or MQTT bridge so the dashboard reflects live sensor values.
+
+---
+
+## Backend
+
+A minimal FastAPI backend now lives in `backend/`. It provides a clean starting point for sensor ingestion and frontend integration.
+
+### Run the API
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+Then open:
+
+- `http://127.0.0.1:8000/health`
+- `http://127.0.0.1:8000/docs`
+
+### Current API routes
+
+- `GET /health`
+- `GET /api/v1/readings/latest`
+- `POST /api/v1/readings`
+
+---
+
 ## Project Goals
 
 1. Make invisible air conditions **visible, meaningful, and actionable**.
