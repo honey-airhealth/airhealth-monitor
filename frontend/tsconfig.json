@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "src/main.jsx",
+    "src/App.jsx",
+    "src/vite-env.d.ts",
+    "src/components/Hero.tsx",
+    "src/components/Features.tsx",
+    "src/components/Sensors.tsx",
+    "src/components/DataSources.tsx",
+    "src/components/ApiCapabilities.tsx",
+    "src/components/Team.tsx",
+    "src/components/Footer.tsx",
+    "src/components/ui/button.tsx",
+    "src/components/ui/card.tsx",
+    "src/components/ui/badge.tsx",
+    "src/components/ui/utils.ts"
+  ],
+  "references": []
+}
