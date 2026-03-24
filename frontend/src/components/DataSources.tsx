@@ -5,6 +5,8 @@ const dataSources = [
   {
     name: 'Google Trends API',
     icon: TrendingUp,
+    sourceType: 'Search signals',
+    href: 'https://trends.google.com/trends/',
     description: 'Monitors search interest for health-related keywords in Thailand, such as headache, cough, difficulty breathing, and PM2.5',
     gradient: 'from-green-500 via-emerald-500 to-teal-500',
     iconBg: 'from-green-500 to-emerald-500',
@@ -12,6 +14,8 @@ const dataSources = [
   {
     name: 'IQAir / OpenAQ API',
     icon: Gauge,
+    sourceType: 'Official measurements',
+    href: 'https://openaq.org/',
     description: 'Provides official PM2.5 and AQI measurements from nearby monitoring stations for comparison and validation',
     gradient: 'from-blue-500 via-indigo-500 to-purple-500',
     iconBg: 'from-blue-500 to-indigo-500',
@@ -19,6 +23,8 @@ const dataSources = [
   {
     name: 'OpenMeteo API',
     icon: Cloud,
+    sourceType: 'Weather context',
+    href: 'https://open-meteo.com/',
     description: 'Delivers additional weather information including forecasts and atmospheric conditions to support environmental interpretation',
     gradient: 'from-indigo-500 via-purple-500 to-pink-500',
     iconBg: 'from-indigo-500 to-purple-500',
@@ -27,81 +33,99 @@ const dataSources = [
 
 export function DataSources() {
   return (
-    <div className="py-8 md:py-10 px-4 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
-      {/* Animated background */}
+    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f9fbff_46%,#f8fafc_100%)] px-4 py-8 md:px-6 md:py-10">
       <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/4 size-96 bg-gradient-to-br from-blue-200 to-purple-200 rounded-full filter blur-3xl opacity-20 animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 size-96 bg-gradient-to-br from-pink-200 to-orange-200 rounded-full filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute left-[18%] top-[18%] h-80 w-80 rounded-full bg-gradient-to-br from-blue-200/30 to-violet-200/30 blur-3xl" />
+        <div className="absolute bottom-[10%] right-[14%] h-80 w-80 rounded-full bg-gradient-to-br from-fuchsia-200/26 to-orange-200/26 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:96px_96px] opacity-40" />
       </div>
-      
-      <div className="max-w-[72rem] mx-auto relative z-10">
-        <div className="text-center mb-7 md:mb-8">
-          <div className="inline-block mb-3">
-            <span className="text-[11px] md:text-xs font-semibold tracking-wide text-green-600 bg-green-100 px-3 py-1.5 rounded-full">
+
+      <div className="relative z-10 mx-auto max-w-[72rem]">
+        <div className="mb-7 text-center md:mb-8">
+          <div className="mb-3 inline-flex items-center rounded-full border border-green-200/80 bg-white/88 px-4 py-2 shadow-[0_14px_30px_rgba(34,197,94,0.12)] backdrop-blur-md">
+            <span className="text-[11px] font-semibold tracking-[0.24em] text-green-600 uppercase md:text-xs">
               DATA INTEGRATION
             </span>
           </div>
-          <h2 className="text-[1.7rem] md:text-[2.45rem] font-bold leading-[1.08] text-gray-900 mb-2.5">
-            External Data <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Sources</span>
+          <h2 className="mb-2.5 text-[1.7rem] font-black leading-[1.08] tracking-[-0.045em] text-slate-900 md:text-[2.45rem]">
+            External Data{' '}
+            <span className="bg-[linear-gradient(90deg,#16a34a_0%,#0ea5e9_100%)] bg-clip-text text-transparent">
+              Sources
+            </span>
           </h2>
-          <p className="text-[13px] md:text-sm leading-6 text-gray-600 max-w-3xl mx-auto">
+          <p className="mx-auto max-w-3xl text-[13px] leading-6 text-slate-600 md:text-sm">
             Enriching local sensor readings with trusted public datasets for validation, context, and deeper insights.
           </p>
         </div>
-        
-        <div className="grid md:grid-cols-3 gap-3.5 md:gap-4 mb-8">
+
+        <div className="mb-8 grid gap-3.5 md:grid-cols-3 md:gap-4">
           {dataSources.map((source, index) => {
             const Icon = source.icon;
             return (
-              <Card 
-                key={index} 
-                className="group overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white relative"
+              <a
+                key={index}
+                href={source.href}
+                target="_blank"
+                rel="noreferrer"
+                className="block"
               >
-                {/* Gradient header */}
-                <div className={`h-24 md:h-28 bg-gradient-to-br ${source.gradient} relative overflow-hidden`}>
-                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity"></div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className={`p-3.5 bg-gradient-to-br ${source.iconBg} rounded-[1.4rem] shadow-2xl group-hover:scale-110 transition-transform duration-500`}>
-                      <Icon className="size-8 text-white" />
+                <Card className="group relative overflow-hidden border border-white/80 bg-white/92 shadow-[0_22px_58px_rgba(148,163,184,0.14)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_28px_74px_rgba(99,102,241,0.16)]">
+                  <div className={`relative h-24 overflow-hidden bg-gradient-to-br ${source.gradient} md:h-28`}>
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(0,0,0,0.08))]" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className={`relative rounded-[1.4rem] bg-gradient-to-br ${source.iconBg} p-3.5 shadow-[0_20px_38px_rgba(15,23,42,0.16)] transition-transform duration-500 group-hover:scale-110`}>
+                        <div className="absolute inset-0 rounded-[1.4rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.16),transparent)]" />
+                        <Icon className="relative size-8 text-white" />
+                      </div>
                     </div>
+                    <div className="absolute left-4 top-4 h-14 w-14 rounded-full border-[4px] border-white/20" />
+                    <div className="absolute right-4 top-4 h-18 w-18 rounded-full border-[4px] border-white/20" />
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-white/50" />
                   </div>
-                  {/* Decorative circles */}
-                  <div className="absolute top-4 right-4 size-18 border-4 border-white/20 rounded-full"></div>
-                  <div className="absolute bottom-4 left-4 size-14 border-4 border-white/20 rounded-full"></div>
-                </div>
-                
-                <div className="p-4">
-                  <h3 className="text-base md:text-[1.45rem] font-bold text-gray-900 mb-2.5 group-hover:text-gray-700 transition-colors">
-                    {source.name}
-                  </h3>
-                  <p className="text-[13px] md:text-sm text-gray-600 leading-6">
-                    {source.description}
-                  </p>
-                </div>
-              </Card>
+
+                  <div className="p-4">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                        {source.sourceType}
+                      </span>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-300">
+                        0{index + 1}
+                      </span>
+                    </div>
+                    <h3 className="mb-2.5 text-base font-black tracking-[-0.03em] text-slate-900 transition-colors group-hover:text-slate-800 md:text-[1.35rem]">
+                      {source.name}
+                    </h3>
+                    <p className="text-[13px] leading-6 text-slate-600 md:text-sm">
+                      {source.description}
+                    </p>
+                    <div className="mt-4 h-px w-full bg-gradient-to-r from-slate-200/80 via-slate-100 to-transparent" />
+                  </div>
+                </Card>
+              </a>
             );
           })}
         </div>
-        
+
         <div className="text-center">
-          <Card className="inline-block max-w-4xl p-4 md:p-5 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 border-0 shadow-2xl relative overflow-hidden">
+          <Card className="relative inline-block max-w-4xl overflow-hidden border-0 bg-[linear-gradient(90deg,#06b6d4_0%,#2563eb_48%,#6366f1_100%)] p-4 shadow-[0_28px_72px_rgba(37,99,235,0.22)] md:p-5">
             <div className="absolute inset-0">
-              <div className="absolute top-0 right-0 size-32 bg-white rounded-full opacity-10"></div>
-              <div className="absolute bottom-0 left-0 size-24 bg-white rounded-full opacity-10"></div>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.2),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.08))]" />
+              <div className="absolute top-0 right-0 size-32 rounded-full bg-white opacity-10"></div>
+              <div className="absolute left-8 top-1/2 h-px w-28 -translate-y-1/2 bg-gradient-to-r from-white/0 via-white/28 to-white/0"></div>
             </div>
-            <div className="relative z-10">
-              <p className="text-white text-sm md:text-base font-bold mb-2">
-                🎯 The Power of Integration
-              </p>
-              <p className="text-white/95 text-[13px] md:text-sm leading-6">
-                By combining local sensor readings with wider public data, our system produces 
-                <span className="font-bold text-yellow-300"> exponentially more meaningful insights </span>
-                than either source could provide alone.
-              </p>
+            <div className="relative z-10 text-left">
+                <p className="mb-2 text-sm font-bold text-white md:text-base">
+                  The Power of Integration
+                </p>
+                <p className="text-[13px] leading-6 text-white/95 md:text-sm">
+                  By combining local sensor readings with wider public data, our system produces
+                  <span className="font-bold text-yellow-300"> exponentially more meaningful insights </span>
+                  than either source could provide alone.
+                </p>
             </div>
           </Card>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

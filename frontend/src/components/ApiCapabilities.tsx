@@ -61,8 +61,10 @@ export function ApiCapabilities() {
       <div className="max-w-[68rem] mx-auto relative z-10">
         <div className="text-center mb-8 md:mb-9">
           <div className="inline-block mb-3">
-            <span className="text-[11px] md:text-xs font-semibold tracking-wide text-indigo-600 bg-indigo-100 px-3 py-1.5 rounded-full">
-              API CAPABILITIES
+            <span className="inline-flex items-center rounded-full border border-indigo-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(238,242,255,0.92))] px-4 py-2 shadow-[0_12px_28px_rgba(99,102,241,0.12)]">
+              <span className="bg-[linear-gradient(90deg,#4338ca_0%,#4f46e5_40%,#7c3aed_100%)] bg-clip-text text-[11px] font-bold tracking-[0.2em] text-transparent uppercase md:text-xs">
+                API CAPABILITIES
+              </span>
             </span>
           </div>
           <h2 className="text-[1.7rem] md:text-[2.45rem] font-bold leading-[1.08] text-gray-900 mb-2.5">

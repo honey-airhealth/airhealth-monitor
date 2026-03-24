@@ -48,49 +48,67 @@ const features = [
 
 export function Features() {
   return (
-    <section className="min-h-screen py-6 md:py-8 px-4 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden flex items-center">
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 size-96 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full filter blur-3xl opacity-30"></div>
-      
-      <div className="max-w-[68rem] mx-auto relative z-10">
-        <div className="text-center mb-5 md:mb-6">
-          <div className="inline-block mb-3">
-            <span className="text-[11px] md:text-xs font-semibold tracking-wide text-blue-600 bg-blue-100 px-3 py-1.5 rounded-full">
+    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_36%,#ffffff_100%)] px-4 py-8 md:px-6 md:py-10">
+      <div className="absolute inset-0">
+        <div className="absolute left-[8%] top-[12%] h-64 w-64 rounded-full bg-cyan-100/60 blur-3xl" />
+        <div className="absolute right-[6%] top-[10%] h-72 w-72 rounded-full bg-violet-100/55 blur-3xl" />
+        <div className="absolute bottom-[4%] left-[24%] h-56 w-56 rounded-full bg-emerald-100/45 blur-3xl" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.03)_1px,transparent_1px)] bg-[size:92px_92px] opacity-45" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-[72rem]">
+        <div className="mb-6 text-center md:mb-8">
+          <div className="mb-4 inline-flex items-center rounded-full border border-blue-200/80 bg-white/85 px-4 py-2 shadow-[0_14px_32px_rgba(96,165,250,0.14)] backdrop-blur-md">
+            <span className="text-[11px] font-semibold tracking-[0.24em] text-blue-600 uppercase md:text-xs">
               FEATURES
             </span>
           </div>
-          <h2 className="text-[1.7rem] md:text-[2.45rem] font-bold leading-[1.08] text-gray-900 mb-2.5">
-            Key Features & <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Capabilities</span>
+          <h2 className="mb-3 text-[1.7rem] font-black leading-[1.04] tracking-[-0.045em] text-slate-900 md:text-[2.45rem]">
+            Key Features &{' '}
+            <span className="bg-[linear-gradient(90deg,#2563eb_0%,#4f46e5_48%,#9333ea_100%)] bg-clip-text text-transparent">
+              Capabilities
+            </span>
           </h2>
-          <p className="text-[13px] md:text-sm leading-6 text-gray-600 max-w-2xl mx-auto">
+          <p className="mx-auto max-w-3xl text-[13px] leading-6 text-slate-600 md:text-[0.96rem]">
             Transform raw environmental data into actionable health insights with our comprehensive monitoring and analytics platform.
           </p>
         </div>
-        
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+
+        <div className="grid gap-3.5 md:grid-cols-2 lg:grid-cols-3 lg:gap-4">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <Card 
-                key={index} 
-                className="group min-h-[220px] p-4 border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 bg-white overflow-hidden relative"
+              <Card
+                key={index}
+                className="group relative min-h-[216px] overflow-hidden border border-white/75 bg-white/82 p-4 shadow-[0_24px_60px_rgba(148,163,184,0.14)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_74px_rgba(96,165,250,0.16)]"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${feature.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-                
+                <div className={`absolute inset-0 bg-gradient-to-br ${feature.bgGradient} opacity-[0.18] transition-opacity duration-300 group-hover:opacity-[0.28]`} />
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/90 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className={`absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gradient-to-br ${feature.gradient} opacity-[0.12] blur-2xl transition-opacity duration-300 group-hover:opacity-[0.18]`} />
+
                 <div className="relative z-10">
-                  <div className={`inline-flex p-2.5 bg-gradient-to-br ${feature.gradient} rounded-2xl shadow-lg mb-3 group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="size-4.5 text-white" />
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className={`inline-flex rounded-[1.15rem] bg-gradient-to-br ${feature.gradient} p-2.5 text-white shadow-[0_14px_28px_rgba(59,130,246,0.16)] transition-transform duration-300 group-hover:scale-110`}>
+                      <Icon className="size-4.5" />
+                    </div>
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                      0{index + 1}
+                    </span>
                   </div>
-                  <h3 className="text-[15px] md:text-base font-bold text-gray-900 mb-2 group-hover:text-gray-800 leading-snug">
+
+                  <h3 className="mb-2.5 text-[1rem] font-bold leading-snug tracking-[-0.025em] text-slate-900 md:text-[1.08rem]">
                     {feature.title}
                   </h3>
-                  <p className="text-[13px] md:text-sm text-gray-600 leading-6">
+                  <p className="text-[13px] leading-6 text-slate-600 md:text-[0.94rem]">
                     {feature.description}
                   </p>
                 </div>
-                
-                {/* Decorative corner */}
-                <div className={`absolute -bottom-8 -right-8 size-24 bg-gradient-to-br ${feature.gradient} rounded-full opacity-10 group-hover:opacity-20 transition-opacity`}></div>
+
+                <div className="relative z-10 mt-auto pt-5">
+                  <div className="h-px w-full bg-gradient-to-r from-slate-200/80 via-slate-100 to-transparent" />
+                </div>
+
+                <div className={`absolute -bottom-10 -right-8 h-28 w-28 rounded-full bg-gradient-to-br ${feature.gradient} opacity-[0.12] transition-all duration-300 group-hover:scale-110 group-hover:opacity-[0.2]`} />
               </Card>
             );
           })}
