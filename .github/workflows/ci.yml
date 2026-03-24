@@ -67,3 +67,33 @@ jobs:
 
           echo "Backend health check failed"
           exit 1
+
+  docker:
+    name: Docker Compose Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate compose file
+        run: docker compose config
+
+      - name: Build and start backend container
+        run: docker compose up -d --build backend
+
+      - name: Check backend health endpoint
+        run: |
+          for i in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:8000/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "Docker backend health check failed"
+          docker compose logs backend
+          exit 1
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down --volumes --remove-orphans
