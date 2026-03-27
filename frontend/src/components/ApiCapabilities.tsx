@@ -1,4 +1,4 @@
-import { Activity, BarChart3, Thermometer, Clock, Scale, TrendingUp } from 'lucide-react';
+import { Activity, BarChart3, Thermometer, Clock, Scale, TrendingUp, Target, LineChart, Map, LayoutDashboard, GitMerge, Sparkles } from 'lucide-react';
 import { Card } from './ui/card';
 
 const capabilities = [
@@ -41,12 +41,60 @@ const capabilities = [
 ];
 
 const outputs = [
-  { name: 'Real-time health risk indicators', icon: '🎯' },
-  { name: 'Time-series visualizations', icon: '📊' },
-  { name: 'Heatmaps by hour and day', icon: '🗺️' },
-  { name: 'Trend analysis dashboards', icon: '📈' },
-  { name: 'Correlation graphs', icon: '🔗' },
-  { name: 'Predictive summaries', icon: '🔮' },
+  {
+    name: 'Health Risk Indicators',
+    desc: 'Live risk scores updated every minute from PM2.5, CO & AQI sensors.',
+    Icon: Target,
+    iconBg: 'from-rose-500 to-pink-600',
+    iconShadow: 'rgba(244,63,94,0.3)',
+    tag: 'Real-time',
+    tagColor: 'bg-rose-50 text-rose-600 border-rose-200',
+  },
+  {
+    name: 'Time-Series Charts',
+    desc: 'Interactive charts showing every sensor reading across time.',
+    Icon: LineChart,
+    iconBg: 'from-sky-500 to-blue-600',
+    iconShadow: 'rgba(59,130,246,0.3)',
+    tag: 'Interactive',
+    tagColor: 'bg-sky-50 text-sky-600 border-sky-200',
+  },
+  {
+    name: 'Hourly Heatmaps',
+    desc: 'Spot pollution hotspots visualized by hour and day of week.',
+    Icon: Map,
+    iconBg: 'from-amber-400 to-orange-500',
+    iconShadow: 'rgba(245,158,11,0.3)',
+    tag: 'Spatial',
+    tagColor: 'bg-amber-50 text-amber-600 border-amber-200',
+  },
+  {
+    name: 'Trend Dashboards',
+    desc: 'Long-term monitoring panels for sustained environmental trends.',
+    Icon: LayoutDashboard,
+    iconBg: 'from-violet-500 to-purple-600',
+    iconShadow: 'rgba(139,92,246,0.3)',
+    tag: 'Analytics',
+    tagColor: 'bg-violet-50 text-violet-600 border-violet-200',
+  },
+  {
+    name: 'Correlation Graphs',
+    desc: 'Link pollutant spikes directly to illness-related search signals.',
+    Icon: GitMerge,
+    iconBg: 'from-teal-500 to-emerald-500',
+    iconShadow: 'rgba(20,184,166,0.3)',
+    tag: 'Insights',
+    tagColor: 'bg-teal-50 text-teal-600 border-teal-200',
+  },
+  {
+    name: 'Predictive Summaries',
+    desc: 'AI-generated forecasts and plain-language health recommendations.',
+    Icon: Sparkles,
+    iconBg: 'from-indigo-500 to-blue-700',
+    iconShadow: 'rgba(99,102,241,0.3)',
+    tag: 'AI-powered',
+    tagColor: 'bg-indigo-50 text-indigo-600 border-indigo-200',
+  },
 ];
 
 export function ApiCapabilities() {
@@ -104,37 +152,97 @@ export function ApiCapabilities() {
           })}
         </div>
         
-        <div className="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 rounded-3xl p-4 md:p-6 shadow-2xl relative overflow-hidden">
-          <div className="absolute inset-0 bg-black opacity-20"></div>
-          <div className="absolute inset-0">
-            <div className="absolute top-10 right-10 size-64 bg-blue-500 rounded-full filter blur-3xl opacity-20"></div>
-            <div className="absolute bottom-10 left-10 size-64 bg-pink-500 rounded-full filter blur-3xl opacity-20"></div>
-          </div>
-          
-          <div className="relative z-10">
-            <h3 className="text-lg md:text-[2rem] font-bold text-white mb-3 text-center">
-              📊 Output Formats
-            </h3>
-            <p className="text-center text-white/80 text-[13px] md:text-sm mb-5 max-w-2xl mx-auto">
-              Multiple visualization and analysis formats to make data accessible for everyone
-            </p>
-            
-            <div className="grid md:grid-cols-3 gap-3.5">
-              {outputs.map((output, index) => (
-                <div
-                  key={index} 
-                  className="group bg-white/10 backdrop-blur-sm p-3.5 md:p-4 rounded-2xl border-2 border-white/20 hover:bg-white/20 hover:border-white/40 transition-all duration-300 hover:-translate-y-1"
-                >
-                  <div className="text-xl md:text-2xl mb-2 group-hover:scale-110 transition-transform duration-300">
-                    {output.icon}
-                  </div>
-                  <span className="text-white font-semibold text-[13px] md:text-sm">{output.name}</span>
-                </div>
-              ))}
+        {/* Output Formats — Blue Glass */}
+        <div className="relative rounded-3xl overflow-hidden p-[2px]"
+          style={{ background: 'linear-gradient(135deg, rgba(99,179,237,0.6) 0%, rgba(59,130,246,0.8) 40%, rgba(109,40,217,0.6) 100%)' }}>
+
+          {/* gradient border glow */}
+          <div className="absolute inset-0 rounded-3xl blur-xl opacity-50 pointer-events-none"
+            style={{ background: 'linear-gradient(135deg, #60a5fa, #3b82f6, #6d28d9)' }} />
+
+          <div className="relative rounded-[22px] overflow-hidden p-7 md:p-10"
+            style={{ background: 'linear-gradient(135deg, #0f2b5b 0%, #0c1e4a 40%, #0e1a3d 70%, #1a0a3d 100%)' }}>
+
+            {/* ambient light blobs */}
+            <div className="pointer-events-none absolute -top-32 -left-32 size-96 rounded-full blur-[110px]"
+              style={{ background: 'radial-gradient(circle, rgba(96,165,250,0.25), transparent 70%)' }} />
+            <div className="pointer-events-none absolute -bottom-32 -right-32 size-96 rounded-full blur-[110px]"
+              style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.2), transparent 70%)' }} />
+            <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-80 rounded-full blur-[80px]"
+              style={{ background: 'radial-gradient(circle, rgba(56,189,248,0.08), transparent 70%)' }} />
+
+            {/* dot grid texture */}
+            <div className="pointer-events-none absolute inset-0 opacity-[0.06]"
+              style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '26px 26px' }} />
+
+            {/* Header */}
+            <div className="relative text-center mb-8">
+              <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-4 border border-white/20 backdrop-blur-md"
+                style={{ background: 'rgba(255,255,255,0.08)' }}>
+                <span className="size-1.5 rounded-full bg-sky-300 shadow-[0_0_8px_3px_rgba(125,211,252,0.8)]" />
+                <span className="text-[10px] font-bold tracking-[0.22em] text-sky-200 uppercase">Output Formats</span>
+              </span>
+              <h3 className="text-[1.6rem] md:text-[2.1rem] font-bold leading-tight text-white">
+                Data delivered{' '}
+                <span className="bg-gradient-to-r from-sky-300 via-blue-300 to-violet-300 bg-clip-text text-transparent">
+                  beautifully
+                </span>
+              </h3>
+              <p className="mt-2.5 text-[13px] md:text-sm text-white/50 max-w-lg mx-auto leading-6">
+                Six formats crafted for clarity — from real-time dashboards to AI-driven forecasts.
+              </p>
             </div>
-            
-            <p className="text-center text-white/90 mt-5 text-[13px] md:text-base font-medium">
-              ✨ These outputs make the system informative for both casual users and future data-driven applications
+
+            {/* Glass cards grid */}
+            <div className="relative grid sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+              {outputs.map((output, index) => {
+                const { Icon } = output;
+                return (
+                  <div
+                    key={index}
+                    className="group relative flex flex-col rounded-2xl border border-white/10 p-5 cursor-default
+                      transition-all duration-300 hover:-translate-y-1.5 hover:border-white/25 overflow-hidden"
+                    style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(16px)' }}
+                  >
+                    {/* hover inner glow */}
+                    <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-400"
+                      style={{ background: 'radial-gradient(ellipse at top left, rgba(147,210,255,0.09), transparent 65%)' }} />
+
+                    {/* shimmer top border */}
+                    <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+
+                    {/* icon + tag */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div
+                        className={`inline-flex items-center justify-center size-11 rounded-xl bg-gradient-to-br ${output.iconBg} group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}
+                        style={{ boxShadow: `0 6px 20px ${output.iconShadow}` }}
+                      >
+                        <Icon className="size-5 text-white" />
+                      </div>
+                      <span className="text-[10px] font-semibold rounded-full px-2.5 py-1 border border-white/15 text-white/50"
+                        style={{ background: 'rgba(255,255,255,0.07)' }}>
+                        {output.tag}
+                      </span>
+                    </div>
+
+                    {/* text */}
+                    <h4 className="font-bold text-white text-[15px] leading-snug mb-1.5">
+                      {output.name}
+                    </h4>
+                    <p className="text-white/45 text-[12px] leading-relaxed flex-1">
+                      {output.desc}
+                    </p>
+
+                    {/* bottom accent */}
+                    <div className={`mt-4 h-[1.5px] rounded-full bg-gradient-to-r ${output.iconBg} opacity-30 group-hover:opacity-70 transition-opacity duration-300`} />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* footer */}
+            <p className="relative text-center text-white/25 mt-6 text-[11px] tracking-wide">
+              Designed for everyone — from casual users to production data pipelines
             </p>
           </div>
         </div>
