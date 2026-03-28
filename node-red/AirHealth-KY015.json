@@ -1,0 +1,126 @@
+[
+    {
+        "id": "faa8999d794ae548",
+        "type": "tab",
+        "label": "AirHealth/KY015",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "574821409bb94b81",
+        "type": "mqtt in",
+        "z": "faa8999d794ae548",
+        "name": "",
+        "topic": "AirHealth/KY015",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "fd32e31d4fb5d676",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 180,
+        "y": 160,
+        "wires": [
+            [
+                "728ea5929a548bc6"
+            ]
+        ]
+    },
+    {
+        "id": "728ea5929a548bc6",
+        "type": "template",
+        "z": "faa8999d794ae548",
+        "name": "",
+        "field": "topic",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "INSERT INTO ky015_readings (temperature, humidity)\nVALUES ({{payload.temperature}}, {{payload.humidity}})",
+        "output": "str",
+        "x": 420,
+        "y": 160,
+        "wires": [
+            [
+                "810db8cf46108b37",
+                "d105334376b9988e"
+            ]
+        ]
+    },
+    {
+        "id": "810db8cf46108b37",
+        "type": "mysql",
+        "z": "faa8999d794ae548",
+        "mydb": "140b9573c3a29110",
+        "name": "",
+        "x": 640,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "d105334376b9988e",
+        "type": "mysql",
+        "z": "faa8999d794ae548",
+        "mydb": "41b38e10a1205335",
+        "name": "",
+        "x": 640,
+        "y": 260,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fd32e31d4fb5d676",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "broker.emqx.io",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "140b9573c3a29110",
+        "type": "MySQLdatabase",
+        "name": "",
+        "host": "iot.cpe.ku.ac.th",
+        "port": "3306",
+        "db": "b6710545458",
+        "tz": "",
+        "charset": "UTF8"
+    },
+    {
+        "id": "41b38e10a1205335",
+        "type": "MySQLdatabase",
+        "name": "",
+        "host": "iot.cpe.ku.ac.th",
+        "port": "3306",
+        "db": "b6710545563",
+        "tz": "",
+        "charset": "UTF8"
+    }
+]
