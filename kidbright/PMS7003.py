@@ -7,7 +7,6 @@ import ujson
 from config import WIFI_SSID, WIFI_PASS, MQTT_BROKER, MQTT_USER, MQTT_PASS
 
 uart = UART(1, baudrate=9600, tx=Pin(23), rx=Pin(19))
-
 MQTT_TOPIC = b"AirHealth/PMS7003"
 
 def connect_wifi():
@@ -32,7 +31,6 @@ def connect_mqtt():
     return client
 
 def read_pms7003():
-    # Wait up to 2 seconds for the start bytes
     timeout = time.ticks_ms()
     while time.ticks_diff(time.ticks_ms(), timeout) < 2000:
         if uart.any():
@@ -40,7 +38,7 @@ def read_pms7003():
             if b1 == b'B':
                 b2 = uart.read(1)
                 if b2 == b'M':
-                    time.sleep_ms(100)  # Wait for full 30 bytes to arrive
+                    time.sleep_ms(100)
                     data = uart.read(30)
                     if data is not None and len(data) == 30:
                         packet = b'BM' + data
@@ -49,7 +47,6 @@ def read_pms7003():
                             return {
                                 "project_name": "AirHealth Monitor",
                                 "sensor_name": "PMS7003",
-                                "pm1_0": values[5],
                                 "pm2_5": values[6],
                                 "pm10": values[7]
                             }
@@ -70,5 +67,5 @@ while True:
         print("Published to AirHealth/PMS7003")
     else:
         print("no_data")
-    client.ping()   # ← Add this to keep connection alive
+    client.ping()
     time.sleep(5)

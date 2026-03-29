@@ -1,0 +1,140 @@
+[
+    {
+        "id": "b0715accc863311a",
+        "type": "tab",
+        "label": "PMS7003 Flow",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "37f4d272a469054f",
+        "type": "mqtt in",
+        "z": "b0715accc863311a",
+        "name": "PMS7003",
+        "topic": "AirHealth/test",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "152fb88b1df35095",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 150,
+        "y": 280,
+        "wires": [
+            [
+                "3169391e7f441e74"
+            ]
+        ]
+    },
+    {
+        "id": "3169391e7f441e74",
+        "type": "template",
+        "z": "b0715accc863311a",
+        "name": "INSERT PMS7003",
+        "field": "topic",
+        "fieldType": "msg",
+        "format": "handlebars",
+        "syntax": "mustache",
+        "template": "INSERT INTO pms7003_readings (pm2_5, pm10) VALUES ({{payload.pm2_5}}, {{payload.pm10}});",
+        "output": "str",
+        "x": 380,
+        "y": 280,
+        "wires": [
+            [
+                "175dbc5d5fe1b654",
+                "df13e6639540f8ca"
+            ]
+        ]
+    },
+    {
+        "id": "175dbc5d5fe1b654",
+        "type": "mysql",
+        "z": "b0715accc863311a",
+        "mydb": "6e25beccd572e30d",
+        "name": "Insert pms7003 T",
+        "x": 590,
+        "y": 280,
+        "wires": [
+            [
+                "1fa2cf9910f3f5c9"
+            ]
+        ]
+    },
+    {
+        "id": "1fa2cf9910f3f5c9",
+        "type": "debug",
+        "z": "b0715accc863311a",
+        "name": "debug PMS7003",
+        "active": true,
+        "tosidebar": true,
+        "complete": "payload",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 810,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "df13e6639540f8ca",
+        "type": "mysql",
+        "z": "b0715accc863311a",
+        "mydb": "026744e325a78d30",
+        "name": "Insert pms7003 T",
+        "x": 590,
+        "y": 360,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "152fb88b1df35095",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "broker.emqx.io",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "6e25beccd572e30d",
+        "type": "MySQLdatabase",
+        "name": "tal db",
+        "host": "iot.cpe.ku.ac.th",
+        "port": "3306",
+        "db": "b6710545563",
+        "tz": "",
+        "charset": "UTF8"
+    },
+    {
+        "id": "026744e325a78d30",
+        "type": "MySQLdatabase",
+        "name": "vince db",
+        "host": "iot.cpe.ku.ac.th",
+        "port": "3306",
+        "db": "b6710545458",
+        "tz": "",
+        "charset": "UTF8"
+    }
+]
