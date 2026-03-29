@@ -1,5 +1,14 @@
 # AirHealth Monitor
 
+![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![React 18](https://img.shields.io/badge/React-18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![TypeScript 5](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite 5](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Node-RED](https://img.shields.io/badge/Node--RED-flow-BB2222?style=for-the-badge&logo=nodered&logoColor=white)
+![MQTT](https://img.shields.io/badge/MQTT-enabled-660066?style=for-the-badge&logo=eclipsemosquitto&logoColor=white)
+
 **Turning Environmental Data into Meaningful Health Insights**
 
 > Team 11 — Honey
@@ -156,7 +165,7 @@ docs: update API response format in README
 
 | Name | Role |
 |------|------|
-| Karnpon POOCHITKANON | Team Member |
-| Thitirat SOMSUPANGSRI | Team Member |
+| Karnpon POOCHITKANON | Team Member 🧑‍💻 |
+| Thitirat SOMSUPANGSRI | Team Member 👩‍💻 |
 
 **Course:** Data Acquisition (DAQ) · Team 11 — Honey
