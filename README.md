@@ -32,7 +32,6 @@ Rather than exposing raw numbers, AirHealth Monitor transforms sensor readings i
 |----------|------------------------------------|-----|----------|
 | PMS7003  | PM2.5 Dust Sensor                  | 1×  | Fine particulate matter (PM2.5) concentration |
 | KY-015   | Temperature & Humidity Sensor      | 1×  | Ambient temperature and relative humidity |
-| MQ-2     | Smoke & Combustible Gas Sensor     | 1×  | Smoke, LPG, and combustible gases |
 | MQ-9     | Carbon Monoxide (CO) Sensor        | 1×  | CO concentration from exhaust / incomplete combustion |
 | —        | Automatic Timestamp Logger         | —   | Exact date and time of every reading |
 
@@ -52,7 +51,7 @@ The API delivers processed, health-relevant outputs rather than raw measurements
 
 ### Key Questions Answered
 
-- What is the **current health risk score** based on live PM2.5, CO, smoke, temperature, humidity, and official AQI data?
+- What is the **current health risk score** based on live PM2.5, CO, temperature, humidity, and official AQI data?
 - Over the past **7 days**, how have PM2.5 and CO spikes related to illness-related search trends?
 - What is the **predicted discomfort index** based on current environmental conditions?
 - At what **times of day** does air quality become most concerning in a specific location?
@@ -66,7 +65,7 @@ The API delivers processed, health-relevant outputs rather than raw measurements
 | Time-series charts | PM2.5 and CO readings plotted against health-search interest |
 | Hourly / daily heatmaps | Most critical periods of poor air quality at a glance |
 | Trend analysis dashboard | Long-term monitoring of environmental changes |
-| Correlation graphs | Relationships among PM2.5, CO, smoke, humidity, temperature, and illness signals |
+| Correlation graphs | Relationships among PM2.5, CO, humidity, temperature, and illness signals |
 | Predictive summaries | Estimated discomfort or health-concern levels based on current trends |
 
 ---
@@ -77,7 +76,6 @@ A React dashboard scaffold now lives in `frontend/`. It is built for the AirHeal
 
 - PMS7003 for PM1.0 / PM2.5 / PM10
 - KY-015 for temperature and humidity
-- MQ-2 for smoke / combustible gas
 - MQ-9 for CO-related readings
 
 ### Run the React app
