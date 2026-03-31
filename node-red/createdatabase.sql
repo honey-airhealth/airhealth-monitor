@@ -60,3 +60,29 @@ CREATE TABLE openmeteo_readings (
     fetched_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_recorded_at (recorded_at)
 );
+
+CREATE TABLE google_trends (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    timestamp       DATETIME NOT NULL,
+    
+    cough           INT,
+    breathless      INT,
+    chest_tight     INT,
+    wheeze          INT,
+
+    allergy         INT, 
+    sore_throat     INT, 
+    itchy_throat    INT,
+    stuffy_nose     INT,
+    runny_nose      INT,
+    
+    headache        INT,
+    dizziness       INT,
+    nausea          INT,
+    itchy_eyes      INT,
+    
+    pm25            INT,
+
+    geo             VARCHAR(10) DEFAULT 'TH-10',
+    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+);
