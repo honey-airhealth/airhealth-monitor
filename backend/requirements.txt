@@ -1,5 +1,8 @@
 fastapi==0.115.12
 uvicorn[standard]==0.34.0
+pydantic
+python-dotenv
+mysql-connector-python
 numpy
 pandas
 pytrends

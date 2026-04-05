@@ -16,5 +16,7 @@ htmlcov/
 *.pyo
 
 # Backend env files
+.env
+.env.*
 backend/.env
 backend/.env.*
