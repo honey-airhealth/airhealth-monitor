@@ -61,9 +61,53 @@ def _latest_combined(conn) -> dict:
     }
 
 
-def _get_official_pm25(conn) -> Optional[float]:
+def _combined_at(conn, snapshot_at: Optional[datetime] = None) -> dict:
+    if snapshot_at is None:
+        return _latest_combined(conn)
+
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT pm25 FROM official_pm25 ORDER BY recorded_at DESC LIMIT 1")
+
+    cursor.execute(
+        "SELECT pm2_5, pm10, recorded_at FROM pms7003_readings WHERE recorded_at <= %s ORDER BY recorded_at DESC LIMIT 1",
+        (snapshot_at,),
+    )
+    pm = cursor.fetchone()
+
+    cursor.execute(
+        "SELECT temperature, humidity, recorded_at FROM ky015_readings WHERE recorded_at <= %s ORDER BY recorded_at DESC LIMIT 1",
+        (snapshot_at,),
+    )
+    ky = cursor.fetchone()
+
+    cursor.execute(
+        "SELECT mq9_raw, recorded_at FROM mq9_readings WHERE recorded_at <= %s ORDER BY recorded_at DESC LIMIT 1",
+        (snapshot_at,),
+    )
+    mq = cursor.fetchone()
+
+    cursor.close()
+
+    if not pm and not ky and not mq:
+        raise HTTPException(404, "No sensor data available for the selected timestamp")
+
+    return {
+        "recorded_at": snapshot_at,
+        "pm2_5": float(pm["pm2_5"]) if pm else 0,
+        "temperature": float(ky["temperature"]) if ky else 0,
+        "humidity": float(ky["humidity"]) if ky else 0,
+        "mq9_raw": float(mq["mq9_raw"]) if mq else 0,
+    }
+
+
+def _get_official_pm25(conn, snapshot_at: Optional[datetime] = None) -> Optional[float]:
+    cursor = conn.cursor(dictionary=True)
+    if snapshot_at is None:
+        cursor.execute("SELECT pm25 FROM official_pm25 ORDER BY recorded_at DESC LIMIT 1")
+    else:
+        cursor.execute(
+            "SELECT pm25 FROM official_pm25 WHERE recorded_at <= %s ORDER BY recorded_at DESC LIMIT 1",
+            (snapshot_at,),
+        )
     row = cursor.fetchone()
     cursor.close()
     return float(row["pm25"]) if row and row["pm25"] is not None else None
@@ -132,10 +176,10 @@ def _get_trend(values: list[float]) -> TrendDirection:
 # Q1: Current Health Risk Score
 @router.get("/health-risk", response_model=HealthRiskResponse,
             summary="Q1: What is the current health risk score right now?")
-def q1_health_risk(conn=Depends(get_db)):
+def q1_health_risk(timestamp: Optional[datetime] = Query(None), conn=Depends(get_db)):
     """What is your current health risk score?"""
-    sensor = _latest_combined(conn)
-    official = _get_official_pm25(conn)
+    sensor = _combined_at(conn, timestamp)
+    official = _get_official_pm25(conn, timestamp)
     score, level, main, contribs, rec = _calc_risk(
         sensor["pm2_5"], sensor["mq9_raw"],
         sensor["temperature"], sensor["humidity"], official)
@@ -275,11 +319,12 @@ def q4_worst_hours(days: int = Query(7, le=30), conn=Depends(get_db)):
 # Q5: Main Contributor
 @router.get("/main-contributor", response_model=MainContributorResponse,
             summary="Q5: Main risk contributor?")
-def q5_main_contributor(conn=Depends(get_db)):
+def q5_main_contributor(timestamp: Optional[datetime] = Query(None), conn=Depends(get_db)):
     """What is the main risk contributor?"""
-    sensor = _latest_combined(conn)
+    sensor = _combined_at(conn, timestamp)
+    official = _get_official_pm25(conn, timestamp)
     score, level, main, contribs, rec = _calc_risk(
-        sensor["pm2_5"], sensor["mq9_raw"], sensor["temperature"], sensor["humidity"])
+        sensor["pm2_5"], sensor["mq9_raw"], sensor["temperature"], sensor["humidity"], official)
     return MainContributorResponse(
         timestamp=sensor["recorded_at"], main_contributor=main,
         pm25_contribution=contribs["pm25"], co_contribution=contribs["co"],
@@ -297,7 +342,7 @@ def q6_history(
     """How has air quality changed over time?"""
     cursor = conn.cursor(dictionary=True)
     since = datetime.now() - timedelta(hours=hours)
-    grp_fmt = "%%Y-%%m-%%d" if interval == "daily" else "%%Y-%%m-%%d %%H:00:00"
+    grp_fmt = "%Y-%m-%d" if interval == "daily" else "%Y-%m-%d %H:00:00"
 
     cursor.execute(f"""
         SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
@@ -385,11 +430,12 @@ def q8_trend(hours: int = Query(24), conn=Depends(get_db)):
 # Q9: Safety
 @router.get("/safety", response_model=SafetyResponse,
             summary="Q9: Safe for daily activity?")
-def q9_safety(conn=Depends(get_db)):
+def q9_safety(timestamp: Optional[datetime] = Query(None), conn=Depends(get_db)):
     """Is the current environment safe for daily activity?"""
-    sensor = _latest_combined(conn)
+    sensor = _combined_at(conn, timestamp)
+    official = _get_official_pm25(conn, timestamp)
     score, level, main, contribs, rec = _calc_risk(
-        sensor["pm2_5"], sensor["mq9_raw"], sensor["temperature"], sensor["humidity"])
+        sensor["pm2_5"], sensor["mq9_raw"], sensor["temperature"], sensor["humidity"], official)
     emoji = {"safe": "🟢", "moderate": "🟡", "unhealthy": "🔴"}
     return SafetyResponse(
         timestamp=sensor["recorded_at"],

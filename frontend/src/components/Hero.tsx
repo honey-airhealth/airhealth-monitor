@@ -14,6 +14,10 @@ const featurePills = [
 ];
 
 export function Hero() {
+  const openApiDashboard = () => {
+    window.location.hash = '#/api';
+  };
+
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.2),_transparent_28%),radial-gradient(circle_at_85%_15%,_rgba(168,85,247,0.16),_transparent_26%),radial-gradient(circle_at_50%_85%,_rgba(34,211,238,0.08),_transparent_34%),linear-gradient(180deg,_#f7fbff_0%,_#eef6fb_48%,_#ffffff_100%)] px-4 py-8 md:px-6 md:py-10">
       <div className="absolute inset-0">
@@ -85,6 +89,7 @@ export function Hero() {
             <Button
               size="lg"
               className="h-14 min-w-[14rem] justify-start rounded-[1.55rem] border border-slate-200 bg-white/90 px-5 text-[1.02rem] text-slate-700 shadow-sm backdrop-blur-xl hover:-translate-y-1 hover:bg-white"
+              onClick={openApiDashboard}
             >
               <span className="flex size-9 items-center justify-center rounded-xl bg-sky-50 ring-1 ring-sky-100">
                 <TrendingUp className="size-5 text-sky-600" />
