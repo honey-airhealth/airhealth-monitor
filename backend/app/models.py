@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 from enum import Enum
@@ -116,3 +116,39 @@ class SafetyResponse(BaseModel):
     risk_level: RiskLevel
     risk_score: float
     recommendation: str
+
+
+class LiveSourceStatus(BaseModel):
+    source: str
+    latest_at: Optional[datetime] = None
+    freshness_minutes: Optional[int] = None
+
+
+class LiveSnapshotResponse(BaseModel):
+    recorded_at: datetime
+    pm2_5: float
+    pm10: Optional[float] = None
+    mq9_raw: float
+    temperature: float
+    humidity: float
+    official_pm25: Optional[float] = None
+    openmeteo_temperature: Optional[float] = None
+    openmeteo_humidity: Optional[float] = None
+
+
+class LiveDashboardResponse(BaseModel):
+    generated_at: datetime
+    snapshot: LiveSnapshotResponse
+    safety: SafetyResponse
+    trend: TrendResponse
+    source_status: list[LiveSourceStatus]
+
+
+class SourceRowsResponse(BaseModel):
+    source: str
+    page: int
+    page_size: int
+    total_rows: int
+    total_pages: int
+    columns: list[str]
+    rows: list[dict[str, Any]]

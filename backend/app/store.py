@@ -9,7 +9,9 @@ from mysql.connector import Error, pooling
 from app.models import SensorReading
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(PROJECT_ROOT / ".env")
+load_dotenv(BACKEND_ROOT / ".env")
 load_dotenv()
 
 
@@ -38,7 +40,7 @@ db_config = {
     "database": os.getenv("DB_NAME", ""),
 }
 
-DB_POOL_SIZE = int(os.getenv("DB_POOL_SIZE", 1))
+DB_POOL_SIZE = int(os.getenv("DB_POOL_SIZE", 5))
 pool = None
 
 

@@ -1,33 +1,13 @@
-import React from 'react';
-import { Hero } from './components/Hero';
-import { Features } from './components/Features';
-import { Sensors } from './components/Sensors';
-import { DataSources } from './components/DataSources';
-import { ApiCapabilities } from './components/ApiCapabilities';
-import { Team } from './components/Team';
-import { Footer } from './components/Footer';
-import ApiDashboardPage from './components/ApiDashboardPage';
+import { Hero } from "./components/Hero";
+import { Features } from "./components/Features";
+import { Sensors } from "./components/Sensors";
+import { DataSources } from "./components/DataSources";
+import { ApiCapabilities } from "./components/ApiCapabilities";
+import { Team } from "./components/Team";
+import { Footer } from "./components/Footer";
+import Dashboard from "./Dashboard.jsx";
 
-function useHashRoute() {
-  const getRoute = () => window.location.hash || '#/';
-  const [route, setRoute] = React.useState(getRoute);
-
-  React.useEffect(() => {
-    const onHashChange = () => setRoute(getRoute());
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
-  }, []);
-
-  return route;
-}
-
-export default function App() {
-  const route = useHashRoute();
-
-  if (route === '#/api') {
-    return <ApiDashboardPage />;
-  }
-
+function HomePage() {
   return (
     <div className="size-full">
       <Hero />
@@ -39,4 +19,14 @@ export default function App() {
       <Footer />
     </div>
   );
+}
+
+export default function App() {
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "/";
+
+  if (pathname === "/dashboard") {
+    return <Dashboard />;
+  }
+
+  return <HomePage />;
 }

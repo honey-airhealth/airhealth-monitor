@@ -26,11 +26,57 @@ from app.models import (
     CompareOfficialResponse,
     TrendResponse,
     SafetyResponse,
+    LiveDashboardResponse,
+    LiveSnapshotResponse,
+    LiveSourceStatus,
+    SourceRowsResponse,
     RiskLevel,
     TrendDirection,
 )
 
 router = APIRouter(prefix="/integration", tags=["Data Integration"])
+
+SOURCE_TABLE_CONFIG = {
+    "PMS7003": {
+        "table": "pms7003_readings",
+        "order_by": "recorded_at DESC, id DESC",
+        "columns": ["id", "pm2_5", "pm10", "recorded_at"],
+    },
+    "KY-015": {
+        "table": "ky015_readings",
+        "order_by": "recorded_at DESC, id DESC",
+        "columns": ["id", "temperature", "humidity", "recorded_at"],
+    },
+    "MQ-9": {
+        "table": "mq9_readings",
+        "order_by": "recorded_at DESC, id DESC",
+        "columns": ["id", "mq9_raw", "recorded_at"],
+    },
+    "Open-Meteo": {
+        "table": "openmeteo_readings",
+        "order_by": "fetched_at DESC, id DESC",
+        "columns": [
+            "id", "source", "temperature_2m", "relative_humidity_2m",
+            "precipitation", "weather_code", "wind_speed_10m", "recorded_at", "fetched_at",
+        ],
+    },
+    "Official PM2.5": {
+        "table": "official_pm25",
+        "order_by": "fetched_at DESC, id DESC",
+        "columns": [
+            "id", "source", "station_name", "pm25", "unit",
+            "distance_km", "recorded_at", "fetched_at",
+        ],
+    },
+    "Google Trends": {
+        "table": "google_trends",
+        "order_by": "created_at DESC, id DESC",
+        "columns": [
+            "id", "timestamp", "cough", "breathless", "allergy",
+            "headache", "dizziness", "pm25", "created_at",
+        ],
+    },
+}
 
 
 # Helpers
@@ -111,6 +157,32 @@ def _get_official_pm25(conn, snapshot_at: Optional[datetime] = None) -> Optional
     row = cursor.fetchone()
     cursor.close()
     return float(row["pm25"]) if row and row["pm25"] is not None else None
+
+
+def _coerce_float(value) -> Optional[float]:
+    return float(value) if value is not None else None
+
+
+def _freshness_minutes(latest_at: Optional[datetime]) -> Optional[int]:
+    if latest_at is None:
+        return None
+    delta = datetime.now() - latest_at
+    return max(int(delta.total_seconds() // 60), 0)
+
+
+def _latest_table_timestamp(conn, table_name: str, column: str = "recorded_at") -> Optional[datetime]:
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(f"SELECT MAX({column}) as latest_at FROM {table_name}")
+    row = cursor.fetchone()
+    cursor.close()
+    return row["latest_at"] if row else None
+
+
+def _serialize_row(row: dict) -> dict:
+    serialized = {}
+    for key, value in row.items():
+        serialized[key] = value.isoformat() if isinstance(value, datetime) else value
+    return serialized
 
 
 def _calc_risk(pm25: float, mq9_raw: float, temp: float, humidity: float, official_pm25=None):
@@ -441,3 +513,171 @@ def q9_safety(timestamp: Optional[datetime] = Query(None), conn=Depends(get_db))
         timestamp=sensor["recorded_at"],
         status=f"{emoji.get(level, '')} {level.value.upper()}",
         risk_level=level, risk_score=score, recommendation=rec)
+
+
+@router.get("/live-dashboard", response_model=LiveDashboardResponse,
+            summary="Live dashboard bundle for the frontend")
+def live_dashboard(hours: int = Query(24, ge=6, le=168), conn=Depends(get_db)):
+    sensor = _latest_combined(conn)
+    official = _get_official_pm25(conn)
+    pm_cursor = conn.cursor(dictionary=True)
+    pm_cursor.execute("SELECT pm10 FROM pms7003_readings ORDER BY recorded_at DESC LIMIT 1")
+    latest_pm_row = pm_cursor.fetchone()
+    pm_cursor.close()
+    score, level, main, contribs, rec = _calc_risk(
+        sensor["pm2_5"], sensor["mq9_raw"], sensor["temperature"], sensor["humidity"], official
+    )
+
+    safety = SafetyResponse(
+        timestamp=sensor["recorded_at"],
+        status=level.value.upper(),
+        risk_level=level,
+        risk_score=score,
+        recommendation=rec,
+    )
+
+    cursor = conn.cursor(dictionary=True)
+    since = datetime.now() - timedelta(hours=hours)
+
+    cursor.execute(
+        "SELECT pm2_5 FROM pms7003_readings WHERE recorded_at >= %s ORDER BY recorded_at",
+        (since,),
+    )
+    pm_vals = [_coerce_float(r["pm2_5"]) or 0 for r in cursor.fetchall()]
+
+    cursor.execute(
+        "SELECT mq9_raw FROM mq9_readings WHERE recorded_at >= %s ORDER BY recorded_at",
+        (since,),
+    )
+    mq_vals = [_coerce_float(r["mq9_raw"]) or 0 for r in cursor.fetchall()]
+
+    cursor.execute(
+        "SELECT temperature, humidity FROM ky015_readings WHERE recorded_at >= %s ORDER BY recorded_at",
+        (since,),
+    )
+    ky_rows = cursor.fetchall()
+    temp_vals = [_coerce_float(r["temperature"]) or 0 for r in ky_rows]
+    hum_vals = [_coerce_float(r["humidity"]) or 0 for r in ky_rows]
+
+    pt, ct = _get_trend(pm_vals), _get_trend(mq_vals)
+    tt, ht = _get_trend(temp_vals), _get_trend(hum_vals)
+    overall = (TrendDirection.worsening if "worsening" in (pt, ct)
+               else TrendDirection.improving if "improving" in (pt, ct)
+               else TrendDirection.stable)
+    trend = TrendResponse(
+        direction=overall,
+        pm25_trend=pt,
+        co_trend=ct,
+        temperature_trend=tt,
+        humidity_trend=ht,
+        summary=f"Air quality is {overall.value} over the last {hours} hours.",
+    )
+
+    cursor.execute(
+        """
+        SELECT temperature_2m, relative_humidity_2m
+        FROM openmeteo_readings
+        ORDER BY recorded_at DESC
+        LIMIT 1
+        """
+    )
+    openmeteo = cursor.fetchone()
+    cursor.close()
+
+    pms_latest = _latest_table_timestamp(conn, "pms7003_readings")
+    ky_latest = _latest_table_timestamp(conn, "ky015_readings")
+    mq_latest = _latest_table_timestamp(conn, "mq9_readings")
+    openmeteo_latest = _latest_table_timestamp(conn, "openmeteo_readings", "fetched_at")
+    official_latest = _latest_table_timestamp(conn, "official_pm25", "fetched_at")
+    trends_latest = _latest_table_timestamp(conn, "google_trends", "created_at")
+    source_status = [
+        LiveSourceStatus(
+            source="PMS7003",
+            latest_at=pms_latest,
+            freshness_minutes=_freshness_minutes(pms_latest),
+        ),
+        LiveSourceStatus(
+            source="KY-015",
+            latest_at=ky_latest,
+            freshness_minutes=_freshness_minutes(ky_latest),
+        ),
+        LiveSourceStatus(
+            source="MQ-9",
+            latest_at=mq_latest,
+            freshness_minutes=_freshness_minutes(mq_latest),
+        ),
+        LiveSourceStatus(
+            source="Open-Meteo",
+            latest_at=openmeteo_latest,
+            freshness_minutes=_freshness_minutes(openmeteo_latest),
+        ),
+        LiveSourceStatus(
+            source="Official PM2.5",
+            latest_at=official_latest,
+            freshness_minutes=_freshness_minutes(official_latest),
+        ),
+        LiveSourceStatus(
+            source="Google Trends",
+            latest_at=trends_latest,
+            freshness_minutes=_freshness_minutes(trends_latest),
+        ),
+    ]
+
+    return LiveDashboardResponse(
+        generated_at=datetime.now(),
+        snapshot=LiveSnapshotResponse(
+            recorded_at=sensor["recorded_at"],
+            pm2_5=sensor["pm2_5"],
+            pm10=_coerce_float(latest_pm_row["pm10"]) if latest_pm_row else None,
+            mq9_raw=sensor["mq9_raw"],
+            temperature=sensor["temperature"],
+            humidity=sensor["humidity"],
+            official_pm25=official,
+            openmeteo_temperature=_coerce_float(openmeteo["temperature_2m"]) if openmeteo else None,
+            openmeteo_humidity=_coerce_float(openmeteo["relative_humidity_2m"]) if openmeteo else None,
+        ),
+        safety=safety,
+        trend=trend,
+        source_status=source_status,
+    )
+
+
+@router.get("/source-rows", response_model=SourceRowsResponse, summary="Paginated table rows by source")
+def get_source_rows(
+    source: str = Query(..., description="One of PMS7003, KY-015, MQ-9, Open-Meteo, Official PM2.5, Google Trends"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    conn=Depends(get_db),
+):
+    config = SOURCE_TABLE_CONFIG.get(source)
+    if not config:
+        raise HTTPException(status_code=400, detail=f"Unsupported source: {source}")
+
+    offset = (page - 1) * page_size
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute(f"SELECT COUNT(*) as total_rows FROM {config['table']}")
+    total_rows = int(cursor.fetchone()["total_rows"])
+    total_pages = max((total_rows + page_size - 1) // page_size, 1)
+
+    cursor.execute(
+        f"""
+        SELECT {", ".join(config["columns"])}
+        FROM {config["table"]}
+        ORDER BY {config["order_by"]}
+        LIMIT %s OFFSET %s
+        """,
+        (page_size, offset),
+    )
+    rows = [_serialize_row(row) for row in cursor.fetchall()]
+    cursor.close()
+
+    return SourceRowsResponse(
+        source=source,
+        page=page,
+        page_size=page_size,
+        total_rows=total_rows,
+        total_pages=total_pages,
+        columns=config["columns"],
+        rows=rows,
+    )
