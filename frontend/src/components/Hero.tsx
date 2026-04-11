@@ -75,6 +75,9 @@ export function Hero() {
           <div className="flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: '0.34s' }}>
             <Button
               size="lg"
+              onClick={() => {
+                window.location.href = "/dashboard";
+              }}
               className="group h-14 min-w-[17rem] justify-start overflow-hidden rounded-[1.55rem] border-0 bg-[linear-gradient(90deg,#1dc7e8_0%,#19afe8_38%,#2393ee_70%,#3b82f6_100%)] px-5 text-[1.02rem] text-white shadow-[0_18px_50px_rgba(59,130,246,0.24)] hover:-translate-y-1 hover:shadow-[0_22px_60px_rgba(59,130,246,0.3)]"
             >
               <span className="flex size-9 items-center justify-center rounded-xl bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
