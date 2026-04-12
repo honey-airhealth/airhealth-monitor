@@ -88,13 +88,6 @@ npm run dev
 
 Then open the local Vite URL, usually `http://localhost:5173`.
 
-### Production build
-
-```bash
-cd frontend
-npm run build
-```
-
 ### Next integration step
 
 Replace the mock snapshot in `frontend/src/data/mockData.js` with data fetched from your backend or MQTT bridge so the dashboard reflects live sensor values.
@@ -125,6 +118,17 @@ Then open:
 - `GET /health`
 - `GET /api/v1/readings/latest`
 - `POST /api/v1/readings`
+- `GET /api/v1/integration/health-risk`
+- `GET /api/v1/integration/correlation`
+- `GET /api/v1/integration/discomfort`
+- `GET /api/v1/integration/worst-hours`
+- `GET /api/v1/integration/main-contributor`
+- `GET /api/v1/integration/history`
+- `GET /api/v1/integration/compare-official`
+- `GET /api/v1/integration/trend`
+- `GET /api/v1/integration/safety`
+- `GET /api/v1/integration/live-dashboard`
+- `GET /api/v1/integration/source-rows`
 
 ---
 

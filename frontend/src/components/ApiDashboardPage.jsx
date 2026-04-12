@@ -63,7 +63,7 @@ function TopBar() {
       <button
         type="button"
         onClick={() => {
-          window.location.hash = '';
+          window.location.href = '/';
         }}
         style={{
           border: '1px solid var(--border)',

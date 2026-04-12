@@ -20,7 +20,7 @@ const teamMembers = [
 
 export function Team() {
   return (
-    <div className="py-10 md:py-12 px-4 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
+    <div id="team-honey" className="py-10 md:py-12 px-4 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
       {/* Background elements */}
       <div className="absolute inset-0">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-96 bg-gradient-to-br from-yellow-200 to-pink-200 rounded-full filter blur-3xl opacity-20"></div>

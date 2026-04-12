@@ -15,7 +15,7 @@ const featurePills = [
 
 export function Hero() {
   const openApiDashboard = () => {
-    window.location.hash = '#/api';
+    window.location.href = '/api';
   };
 
   return (
@@ -91,13 +91,13 @@ export function Hero() {
             </Button>
             <Button
               size="lg"
-              className="h-14 min-w-[14rem] justify-start rounded-[1.55rem] border border-slate-200 bg-white/90 px-5 text-[1.02rem] text-slate-700 shadow-sm backdrop-blur-xl hover:-translate-y-1 hover:bg-white"
+              className="h-14 min-w-[16rem] justify-start rounded-[1.55rem] border border-slate-200 bg-white/90 px-5 text-[1.02rem] text-slate-700 shadow-sm backdrop-blur-xl hover:-translate-y-1 hover:bg-white"
               onClick={openApiDashboard}
             >
               <span className="flex size-9 items-center justify-center rounded-xl bg-sky-50 ring-1 ring-sky-100">
                 <TrendingUp className="size-5 text-sky-600" />
               </span>
-              <span className="pr-2 font-semibold">Explore API</span>
+              <span className="pr-2 font-semibold">Explore Data Insights</span>
             </Button>
           </div>
         </div>

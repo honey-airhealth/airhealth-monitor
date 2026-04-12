@@ -298,7 +298,7 @@ def q2_correlation(days: int = Query(7, le=30), conn=Depends(get_db)):
     common_days = sorted(set(pm_daily.keys()) & set(mq_daily.keys()) & set(trends_daily.keys()))
     if len(common_days) < 3:
         return CorrelationResponse(period_days=days,
-                                   interpretation="Not enough data. Need at least 3 days of overlapping sensor + trends data.")
+                                   interpretation=f"Found only {len(common_days)} overlapping day(s) within the last {days} days. Need at least 3 overlapping days to calculate a reliable correlation.")
 
     pm25_vals = [pm_daily[d] for d in common_days]
     mq9_vals = [mq_daily[d] for d in common_days]
@@ -318,8 +318,8 @@ def q2_correlation(days: int = Query(7, le=30), conn=Depends(get_db)):
             corrs[field] = round(float(r), 3) if not np.isnan(r) else None
 
     sig = [v for v in corrs.values() if v and abs(v) > 0.5]
-    interp = (f"Found {len(sig)} significant correlation(s) (|r|>0.5) over {days} days."
-              if sig else f"No strong correlations over {days} days. More data may help.")
+    interp = (f"Found {len(sig)} significant correlation(s) (|r|>0.5) using the latest {len(common_days)} overlapping day(s) within the last {days} days."
+              if sig else f"No strong correlations in the latest {len(common_days)} overlapping day(s) within the last {days} days. More data may help.")
     return CorrelationResponse(period_days=days, interpretation=interp, **corrs)
 
 

@@ -38,7 +38,7 @@ export default function Correlation() {
       <SectionTitle action={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <select value={days} onChange={e => setDays(Number(e.target.value))} style={{ fontSize: 11, padding: '3px 6px', border: '0.5px solid var(--border)', borderRadius: 6, background: 'var(--bg)', color: 'var(--t1)' }}>
-            {[3,5,7,14,30].map(d => <option key={d} value={d}>{d}d</option>)}
+            {[5,7,14,30].map(d => <option key={d} value={d}>Last {d}d</option>)}
           </select>
           <button className="refresh-btn" onClick={refetch}>↺</button>
         </div>

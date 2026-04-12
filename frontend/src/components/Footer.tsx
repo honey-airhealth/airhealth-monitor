@@ -37,7 +37,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="https://github.com/honey-airhealth/airhealth-monitor.git" target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors cursor-pointer text-[13px] md:text-sm hover:translate-x-2 transition-transform duration-200 inline-block">
+                <a href="/api" className="text-gray-400 hover:text-white transition-colors cursor-pointer text-[13px] md:text-sm hover:translate-x-2 transition-transform duration-200 inline-block">
                   → API Documentation
                 </a>
               </li>
@@ -47,7 +47,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-gray-400 hover:text-white transition-colors cursor-pointer text-[13px] md:text-sm hover:translate-x-2 transition-transform duration-200 inline-block">
+                <a href="/#team-honey" className="text-gray-400 hover:text-white transition-colors cursor-pointer text-[13px] md:text-sm hover:translate-x-2 transition-transform duration-200 inline-block">
                   → About Us
                 </a>
               </li>
@@ -74,7 +74,7 @@ export function Footer() {
               <br />
               karnpon.p@ku.th
               <br />
-              thititat.som@ku.th
+              thitirat.som@ku.th
             </p>
             </div>
           </div>
