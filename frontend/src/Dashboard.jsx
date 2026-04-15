@@ -38,7 +38,7 @@ const riskTone = {
 
 const formatTimestamp = (value) => {
   if (!value) return "No data";
-  return new Intl.DateTimeFormat("th-TH", {
+  return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
