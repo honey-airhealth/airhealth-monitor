@@ -7,6 +7,8 @@ import MainContributor from './api_dashboard/MainContributor';
 import History from './api_dashboard/History';
 import { CompareOfficial, Trend, Safety } from './api_dashboard/StatusPanels';
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext';
+import { Braces } from 'lucide-react';
+import DashboardHero from './DashboardHero.jsx';
 
 const pageStyle = {
   minHeight: '100vh',
@@ -44,43 +46,6 @@ const dashboardCards = [
   { id: 'trend', title: 'Q8 · Trend direction', component: Trend },
   { id: 'safety', title: 'Q9 · Safety for daily activity', component: Safety },
 ];
-
-function TopBar() {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', marginBottom: 24, flexWrap: 'wrap' }}>
-      <div>
-        <div style={{ fontSize: 12, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--t2)', marginBottom: 8 }}>
-          AirHealth frontend API
-        </div>
-        <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.4rem)', lineHeight: 1, fontWeight: 700, margin: 0, color: 'var(--t1)' }}>
-          API Dashboard
-        </h1>
-        <p style={{ margin: '12px 0 0', maxWidth: 700, fontSize: 14, lineHeight: 1.7, color: 'var(--t2)' }}>
-          Explore live health and air-quality insights through a unified dashboard powered by your integration API.
-        </p>
-      </div>
-
-      <button
-        type="button"
-        onClick={() => {
-          window.location.href = '/';
-        }}
-        style={{
-          border: '1px solid var(--border)',
-          background: 'rgba(255, 255, 255, 0.9)',
-          color: 'var(--t1)',
-          padding: '10px 16px',
-          borderRadius: 999,
-          cursor: 'pointer',
-          fontSize: 13,
-          fontWeight: 600,
-        }}
-      >
-        Back to landing
-      </button>
-    </div>
-  );
-}
 
 function OptionalCard({ title, component: Component, fullWidth = false }) {
   const [open, setOpen] = React.useState(false);
@@ -153,7 +118,16 @@ export default function ApiDashboardPage() {
 
       <div className="api-dashboard-page" style={{ maxWidth: 1320, margin: '0 auto', padding: '40px 20px 56px' }}>
         <RiskSnapshotProvider>
-          <TopBar />
+          <div style={{ marginBottom: 24 }}>
+            <DashboardHero
+              current="api"
+              icon={Braces}
+              title="API Dashboard"
+              subtitle="Health and air-quality insights powered by the integration API."
+              badge="API metrics"
+              path="/api"
+            />
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 18 }}>
             {dashboardCards.map((card) => (
