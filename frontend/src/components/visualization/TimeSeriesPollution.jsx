@@ -75,19 +75,19 @@ function ControlButton({ active, children, onClick, title }) {
       title={title}
       onClick={onClick}
       style={{
-        border: active ? '1px solid rgba(55, 138, 221, 0.9)' : '1px solid rgba(213, 224, 231, 0.95)',
+        border: active ? '1px solid rgba(55, 138, 221, 0.8)' : '1px solid rgba(213, 224, 231, 0.9)',
         background: active
-          ? 'linear-gradient(180deg, rgba(235,246,255,1), rgba(215,235,255,0.98))'
-          : 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(238,244,248,0.96))',
-        color: active ? '#1F5F9E' : 'var(--t1)',
-        borderRadius: 10,
-        padding: '7px 12px',
-        minHeight: 34,
+          ? 'rgba(230, 243, 255, 0.98)'
+          : 'rgba(255, 255, 255, 0.78)',
+        color: active ? '#185D9D' : '#516879',
+        borderRadius: 999,
+        padding: '8px 13px',
+        minHeight: 36,
         fontSize: 12,
         fontWeight: 800,
         lineHeight: 1,
         cursor: 'pointer',
-        boxShadow: active ? '0 8px 20px rgba(55, 138, 221, 0.18)' : '0 6px 14px rgba(15, 23, 42, 0.06)',
+        boxShadow: active ? '0 8px 18px rgba(55, 138, 221, 0.14)' : 'none',
         whiteSpace: 'nowrap',
       }}
     >
@@ -101,11 +101,11 @@ function SegmentedControl({ options, value, onChange, getLabel = (option) => opt
     <div style={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: 4,
-      borderRadius: 12,
-      border: '1px solid rgba(213, 224, 231, 0.9)',
-      background: 'rgba(231, 239, 243, 0.7)',
-      padding: 3,
+      gap: 6,
+      borderRadius: 999,
+      border: '1px solid rgba(213, 224, 231, 0.75)',
+      background: 'rgba(241, 247, 250, 0.82)',
+      padding: 5,
     }}>
       {options.map((option) => (
         <ControlButton
@@ -129,22 +129,22 @@ function KeywordMenu({ value, onChange }) {
         style={{
           listStyle: 'none',
           border: '1px solid rgba(213, 224, 231, 0.95)',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(238,244,248,0.96))',
+          background: 'rgba(255,255,255,0.86)',
           color: 'var(--t1)',
-          borderRadius: 10,
-          padding: '8px 34px 8px 12px',
-          minHeight: 34,
+          borderRadius: 999,
+          padding: '10px 34px 10px 14px',
+          minHeight: 38,
           minWidth: 148,
           fontSize: 12,
           fontWeight: 800,
           lineHeight: 1,
           cursor: 'pointer',
-          boxShadow: '0 6px 14px rgba(15, 23, 42, 0.06)',
+          boxShadow: 'none',
           position: 'relative',
         }}
       >
         {active.label}
-        <span style={{ position: 'absolute', right: 11, top: 8, color: 'var(--t3)', fontSize: 11 }}>▾</span>
+        <span style={{ position: 'absolute', right: 13, top: 10, color: 'var(--t3)', fontSize: 11 }}>▾</span>
       </summary>
       <div style={{
         position: 'absolute',
@@ -224,10 +224,15 @@ export default function TimeSeriesPollution() {
         </div>
       }>V1 · Pollution vs sickness keywords</SectionTitle>
 
-      {loading && <Loader />}
-      {error && <ErrorBox msg={error} onRetry={refetch} />}
+      {loading && chartData.length === 0 && <Loader />}
+      {error && chartData.length === 0 && <ErrorBox msg={error} onRetry={refetch} />}
+      {error && chartData.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <ErrorBox msg={error} onRetry={refetch} />
+        </div>
+      )}
 
-      {!loading && !error && chartData.length > 0 && (
+      {chartData.length > 0 && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 16 }}>
             <MetricCard label={`avg ${pollutantConfig.label}`} value={avgPollutant} unit={pollutantConfig.unit} color={pollutantConfig.color} />
@@ -236,7 +241,27 @@ export default function TimeSeriesPollution() {
             <MetricCard label={`latest ${keywordConfig.label}`} value={latest[keyword]} unit="trend" color={keywordConfig.color} />
           </div>
 
-          <div style={{ height: 320, background: 'var(--bg2)', borderRadius: 8, padding: '14px 10px 6px' }}>
+          <div style={{ position: 'relative', height: 320, background: 'var(--bg2)', borderRadius: 8, padding: '14px 10px 6px' }}>
+            {loading && (
+              <div style={{
+                position: 'absolute',
+                right: 14,
+                top: 10,
+                zIndex: 2,
+                borderRadius: 999,
+                border: '1px solid rgba(213, 224, 231, 0.9)',
+                background: 'rgba(255,255,255,0.88)',
+                color: 'var(--t2)',
+                padding: '5px 9px',
+                fontSize: 10,
+                fontWeight: 800,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                boxShadow: '0 8px 18px rgba(15, 23, 42, 0.08)',
+              }}>
+                updating
+              </div>
+            )}
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 8, right: 12, left: -8, bottom: 0 }}>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
