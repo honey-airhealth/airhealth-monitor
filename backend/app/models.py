@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -152,3 +152,33 @@ class SourceRowsResponse(BaseModel):
     total_pages: int
     columns: list[str]
     rows: list[dict[str, Any]]
+
+
+class VisualizationTimeSeriesPoint(BaseModel):
+    week: str
+    week_start: Optional[date] = None
+    avg_pm25: Optional[float] = None
+    avg_co: Optional[float] = None
+    cough: Optional[float] = None
+    breathless: Optional[float] = None
+    chest_tight: Optional[float] = None
+    wheeze: Optional[float] = None
+    headache: Optional[float] = None
+    sore_throat: Optional[float] = None
+    itchy_throat: Optional[float] = None
+    stuffy_nose: Optional[float] = None
+    runny_nose: Optional[float] = None
+    dizziness: Optional[float] = None
+    nausea: Optional[float] = None
+    itchy_eyes: Optional[float] = None
+    allergy: Optional[float] = None
+    pm25_search: Optional[float] = None
+    illness_index: Optional[float] = None
+
+
+class VisualizationTimeSeriesResponse(BaseModel):
+    visualization: str
+    period_days: int
+    interval: str
+    count: int
+    data: list[VisualizationTimeSeriesPoint]

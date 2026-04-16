@@ -2,6 +2,7 @@ const tabs = [
   { href: "/", label: "Home", key: "home" },
   { href: "/dashboard", label: "Live", key: "dashboard" },
   { href: "/api", label: "API", key: "api" },
+  { href: "/visualization", label: "Visualization", key: "visualization" },
 ];
 
 export default function PageTabs({ current }) {

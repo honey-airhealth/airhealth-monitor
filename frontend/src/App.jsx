@@ -4,6 +4,7 @@ import { Sensors } from "./components/Sensors";
 import { DataSources } from "./components/DataSources";
 import { ApiCapabilities } from "./components/ApiCapabilities";
 import ApiDashboardPage from "./components/ApiDashboardPage.jsx";
+import VisualizationPage from "./components/VisualizationPage.jsx";
 import { Team } from "./components/Team";
 import { Footer } from "./components/Footer";
 import Dashboard from "./Dashboard.jsx";
@@ -32,6 +33,10 @@ export default function App() {
 
   if (pathname === "/api" || hash === "#/api") {
     return <ApiDashboardPage />;
+  }
+
+  if (pathname === "/visualization" || hash === "#/visualization") {
+    return <VisualizationPage />;
   }
 
   return <HomePage />;

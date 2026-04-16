@@ -43,3 +43,4 @@ export const getHistory         = (hours = 168, interval = 'hourly') => api.get(
 export const getCompareOfficial = ()              => api.get('/compare-official')
 export const getTrend           = (hours = 24)    => api.get('/trend', { params: { hours } })
 export const getSafety          = (timestamp)     => api.get('/safety', { params: timestamp ? { timestamp } : {} })
+export const getVisualizationTimeSeries = (days = 84, interval = 'daily') => api.get('/visualization/time-series', { params: { days, interval } })

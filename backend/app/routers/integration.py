@@ -30,6 +30,7 @@ from app.models import (
     LiveSnapshotResponse,
     LiveSourceStatus,
     SourceRowsResponse,
+    VisualizationTimeSeriesResponse,
     RiskLevel,
     TrendDirection,
 )
@@ -513,6 +514,149 @@ def q9_safety(timestamp: Optional[datetime] = Query(None), conn=Depends(get_db))
         timestamp=sensor["recorded_at"],
         status=f"{emoji.get(level, '')} {level.value.upper()}",
         risk_level=level, risk_score=score, recommendation=rec)
+
+
+# Visualization API 1: Time-series chart for PM2.5 or CO vs Google Trends sickness keywords over weeks.
+@router.get(
+    "/visualization/time-series",
+    response_model=VisualizationTimeSeriesResponse,
+    summary="Visualization 1: PM2.5 or CO vs illness keyword trends over weeks",
+)
+def visualization_time_series(
+    days: int = Query(84, ge=1, le=365),
+    interval: str = Query("daily", pattern="^(daily|weekly)$"),
+    conn=Depends(get_db),
+):
+    """Daily or weekly PM2.5/MQ9 averages aligned with Google Trends illness keywords."""
+    cursor = conn.cursor(dictionary=True)
+    since = datetime.now() - timedelta(days=days)
+    sensor_period = "DATE(recorded_at)" if interval == "daily" else "YEARWEEK(recorded_at, 3)"
+    trend_period = "DATE(timestamp)" if interval == "daily" else "YEARWEEK(timestamp, 3)"
+
+    cursor.execute(
+        """
+        SELECT MIN(first_seen) as first_sensor_at
+        FROM (
+            SELECT MIN(recorded_at) as first_seen
+            FROM pms7003_readings
+            WHERE recorded_at >= %s
+            UNION ALL
+            SELECT MIN(recorded_at) as first_seen
+            FROM mq9_readings
+            WHERE recorded_at >= %s
+        ) sensor_start
+        """,
+        (since, since),
+    )
+    start_row = cursor.fetchone()
+    aligned_since = start_row["first_sensor_at"] if start_row and start_row["first_sensor_at"] else since
+
+    cursor.execute(
+        f"""
+        SELECT {sensor_period} as week_key,
+               MIN(DATE(recorded_at)) as week_start,
+               ROUND(AVG(pm2_5), 2) as avg_pm25
+        FROM pms7003_readings
+        WHERE recorded_at >= %s
+        GROUP BY week_key
+        ORDER BY week_key
+        """,
+        (aligned_since,),
+    )
+    pm_by_week = {str(r["week_key"]): r for r in cursor.fetchall()}
+
+    cursor.execute(
+        f"""
+        SELECT {sensor_period} as week_key,
+               MIN(DATE(recorded_at)) as week_start,
+               ROUND(AVG(mq9_raw), 2) as avg_co
+        FROM mq9_readings
+        WHERE recorded_at >= %s
+        GROUP BY week_key
+        ORDER BY week_key
+        """,
+        (aligned_since,),
+    )
+    co_by_week = {str(r["week_key"]): r for r in cursor.fetchall()}
+
+    cursor.execute(
+        f"""
+        SELECT {trend_period} as week_key,
+               MIN(DATE(timestamp)) as week_start,
+               ROUND(AVG(cough), 2) as cough,
+               ROUND(AVG(breathless), 2) as breathless,
+               ROUND(AVG(chest_tight), 2) as chest_tight,
+               ROUND(AVG(wheeze), 2) as wheeze,
+               ROUND(AVG(headache), 2) as headache,
+               ROUND(AVG(sore_throat), 2) as sore_throat,
+               ROUND(AVG(itchy_throat), 2) as itchy_throat,
+               ROUND(AVG(stuffy_nose), 2) as stuffy_nose,
+               ROUND(AVG(runny_nose), 2) as runny_nose,
+               ROUND(AVG(dizziness), 2) as dizziness,
+               ROUND(AVG(nausea), 2) as nausea,
+               ROUND(AVG(itchy_eyes), 2) as itchy_eyes,
+               ROUND(AVG(allergy), 2) as allergy,
+               ROUND(AVG(pm25), 2) as pm25_search
+        FROM google_trends
+        WHERE timestamp >= %s
+        GROUP BY week_key
+        ORDER BY week_key
+        """,
+        (aligned_since,),
+    )
+    trends_by_week = {str(r["week_key"]): r for r in cursor.fetchall()}
+    cursor.close()
+
+    sensor_weeks = set(pm_by_week) | set(co_by_week)
+    all_weeks = sorted(sensor_weeks)
+    rows = []
+    keyword_fields = [
+        "cough", "breathless", "chest_tight", "wheeze", "allergy", "sore_throat",
+        "itchy_throat", "stuffy_nose", "runny_nose", "headache", "dizziness",
+        "nausea", "itchy_eyes",
+    ]
+
+    for week in all_weeks:
+        pm = pm_by_week.get(week, {})
+        co = co_by_week.get(week, {})
+        trend = trends_by_week.get(week, {})
+        keyword_values = [_coerce_float(trend.get(field)) for field in keyword_fields]
+        present_keywords = [value for value in keyword_values if value is not None]
+        illness_index = (
+            round(sum(present_keywords) / len(present_keywords), 2)
+            if present_keywords
+            else None
+        )
+
+        rows.append({
+            "week": week,
+            "week_start": pm.get("week_start") or co.get("week_start") or trend.get("week_start"),
+            "avg_pm25": _coerce_float(pm.get("avg_pm25")),
+            "avg_co": _coerce_float(co.get("avg_co")),
+            "cough": _coerce_float(trend.get("cough")),
+            "breathless": _coerce_float(trend.get("breathless")),
+            "chest_tight": _coerce_float(trend.get("chest_tight")),
+            "wheeze": _coerce_float(trend.get("wheeze")),
+            "headache": _coerce_float(trend.get("headache")),
+            "sore_throat": _coerce_float(trend.get("sore_throat")),
+            "itchy_throat": _coerce_float(trend.get("itchy_throat")),
+            "stuffy_nose": _coerce_float(trend.get("stuffy_nose")),
+            "runny_nose": _coerce_float(trend.get("runny_nose")),
+            "dizziness": _coerce_float(trend.get("dizziness")),
+            "nausea": _coerce_float(trend.get("nausea")),
+            "itchy_eyes": _coerce_float(trend.get("itchy_eyes")),
+            "allergy": _coerce_float(trend.get("allergy")),
+            "pm25_search": _coerce_float(trend.get("pm25_search")),
+            "illness_index": illness_index,
+        })
+
+    return VisualizationTimeSeriesResponse(
+        visualization="time-series-pollution-vs-illness-keywords",
+        period_days=days,
+        interval=interval,
+        count=len(rows),
+        data=rows,
+    )
 
 
 @router.get("/live-dashboard", response_model=LiveDashboardResponse,
