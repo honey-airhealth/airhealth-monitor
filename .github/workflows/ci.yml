@@ -32,7 +32,7 @@ jobs:
         run: npm run build
 
   backend-tests:
-    name: Backend Tests
+    name: Run Backend Tests
     runs-on: ubuntu-latest
     permissions:
       checks: write
