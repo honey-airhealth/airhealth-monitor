@@ -1,6 +1,7 @@
 import React from 'react'
 import { LineChart } from 'lucide-react'
 import DashboardHero from './DashboardHero.jsx'
+import CorrelationScatter from './visualization/CorrelationScatter.jsx'
 import TimeSeriesPollution from './visualization/TimeSeriesPollution.jsx'
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext.jsx'
 
@@ -27,6 +28,13 @@ const visualizationCards = [
     title: 'Time-series chart',
     description: 'PM2.5 or CO compared with Google Trends sickness keywords over weekly periods.',
     component: TimeSeriesPollution,
+  },
+  {
+    id: 'correlation-scatter',
+    shortLabel: 'V2',
+    title: 'Correlation scatter plot',
+    description: 'Paired pollutant and Google Trends points with Pearson r and p-value.',
+    component: CorrelationScatter,
   },
 ]
 

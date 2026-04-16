@@ -182,3 +182,28 @@ class VisualizationTimeSeriesResponse(BaseModel):
     interval: str
     count: int
     data: list[VisualizationTimeSeriesPoint]
+
+
+class VisualizationCorrelationScatterPoint(BaseModel):
+    period: str
+    period_start: Optional[date] = None
+    pollutant_value: Optional[float] = None
+    search_volume: Optional[float] = None
+
+
+class VisualizationCorrelationScatterResponse(BaseModel):
+    visualization: str
+    pollutant: str
+    pollutant_label: str
+    keyword: str
+    keyword_label: str
+    period_days: int
+    interval: str
+    pearson_r: Optional[float] = None
+    p_value: Optional[float] = None
+    alpha: float = 0.05
+    significant: bool = False
+    overlap_points: int
+    interpretation: str
+    count: int
+    data: list[VisualizationCorrelationScatterPoint]

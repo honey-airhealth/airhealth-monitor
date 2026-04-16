@@ -128,6 +128,7 @@ Then open:
 - `GET /api/v1/integration/trend`
 - `GET /api/v1/integration/safety`
 - `GET /api/v1/integration/visualization/time-series`
+- `GET /api/v1/integration/visualization/correlation-scatter`
 - `GET /api/v1/integration/live-dashboard`
 - `GET /api/v1/integration/source-rows`
 

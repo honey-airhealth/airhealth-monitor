@@ -14,6 +14,7 @@ Actual table schemas:
 from fastapi import APIRouter, Depends, Query, HTTPException
 from datetime import datetime, timedelta
 from typing import Optional
+import math
 import numpy as np
 
 from app.store import get_db
@@ -30,6 +31,7 @@ from app.models import (
     LiveSnapshotResponse,
     LiveSourceStatus,
     SourceRowsResponse,
+    VisualizationCorrelationScatterResponse,
     VisualizationTimeSeriesResponse,
     RiskLevel,
     TrendDirection,
@@ -244,6 +246,33 @@ def _get_trend(values: list[float]) -> TrendDirection:
     if rel > 0.02:     return TrendDirection.worsening
     elif rel < -0.02:  return TrendDirection.improving
     return TrendDirection.stable
+
+
+def _student_t_pdf(x: float, df: int) -> float:
+    coeff = math.exp(math.lgamma((df + 1) / 2) - math.lgamma(df / 2))
+    coeff /= math.sqrt(df * math.pi)
+    return coeff * ((1 + (x * x) / df) ** (-(df + 1) / 2))
+
+
+def _student_t_two_tailed_p_value(t_stat: float, df: int) -> Optional[float]:
+    if df <= 0 or math.isnan(t_stat):
+        return None
+    x = abs(t_stat)
+    if x == 0:
+        return 1.0
+    if x > 40:
+        return 0.0
+
+    steps = 1000
+    if steps % 2:
+        steps += 1
+    h = x / steps
+    total = _student_t_pdf(0, df) + _student_t_pdf(x, df)
+    for i in range(1, steps):
+        total += (4 if i % 2 else 2) * _student_t_pdf(i * h, df)
+    integral = total * h / 3
+    cdf = min(0.5 + integral, 1.0)
+    return max(2 * (1 - cdf), 0.0)
 
 
 # Q1: Current Health Risk Score
@@ -654,6 +683,192 @@ def visualization_time_series(
         visualization="time-series-pollution-vs-illness-keywords",
         period_days=days,
         interval=interval,
+        count=len(rows),
+        data=rows,
+    )
+
+
+# Visualization API 2: Correlation scatter plot for PM2.5 or CO/MQ9 vs Google Trends.
+@router.get(
+    "/visualization/correlation-scatter",
+    response_model=VisualizationCorrelationScatterResponse,
+    summary="Visualization 2: Correlation scatter plot with Pearson r and p-value",
+)
+def visualization_correlation_scatter(
+    days: int = Query(14, ge=1, le=365),
+    pollutant: str = Query("pm25", pattern="^(pm25|co)$"),
+    keyword: str = Query("illness_index"),
+    interval: str = Query("daily", pattern="^(daily|weekly)$"),
+    conn=Depends(get_db),
+):
+    """Pair PM2.5 or MQ9 values with Google Trends health searches and test Pearson correlation."""
+    pollutant_labels = {
+        "pm25": "PM2.5",
+        "co": "CO / MQ9 raw",
+    }
+    keyword_labels = {
+        "illness_index": "Illness index",
+        "cough": "Cough",
+        "breathless": "Breathless",
+        "chest_tight": "Chest tight",
+        "wheeze": "Wheeze",
+        "allergy": "Allergy",
+        "sore_throat": "Sore throat",
+        "itchy_throat": "Itchy throat",
+        "stuffy_nose": "Stuffy nose",
+        "runny_nose": "Runny nose",
+        "headache": "Headache",
+        "dizziness": "Dizziness",
+        "nausea": "Nausea",
+        "itchy_eyes": "Itchy eyes",
+        "pm25_search": "PM2.5 search",
+    }
+    if keyword not in keyword_labels:
+        raise HTTPException(status_code=400, detail=f"Unsupported Google Trends keyword: {keyword}")
+
+    cursor = conn.cursor(dictionary=True)
+    since = datetime.now() - timedelta(days=days)
+    sensor_period = "DATE(recorded_at)" if interval == "daily" else "YEARWEEK(recorded_at, 3)"
+    trend_period = "DATE(timestamp)" if interval == "daily" else "YEARWEEK(timestamp, 3)"
+
+    if pollutant == "pm25":
+        cursor.execute(
+            "SELECT MIN(recorded_at) as first_sensor_at FROM pms7003_readings WHERE recorded_at >= %s",
+            (since,),
+        )
+    else:
+        cursor.execute(
+            "SELECT MIN(recorded_at) as first_sensor_at FROM mq9_readings WHERE recorded_at >= %s",
+            (since,),
+        )
+    start_row = cursor.fetchone()
+    aligned_since = start_row["first_sensor_at"] if start_row and start_row["first_sensor_at"] else since
+
+    if pollutant == "pm25":
+        cursor.execute(
+            f"""
+            SELECT {sensor_period} as period,
+                   MIN(DATE(recorded_at)) as period_start,
+                   ROUND(AVG(pm2_5), 2) as pollutant_value
+            FROM pms7003_readings
+            WHERE recorded_at >= %s
+            GROUP BY period
+            ORDER BY period
+            """,
+            (aligned_since,),
+        )
+    else:
+        cursor.execute(
+            f"""
+            SELECT {sensor_period} as period,
+                   MIN(DATE(recorded_at)) as period_start,
+                   ROUND(AVG(mq9_raw), 2) as pollutant_value
+            FROM mq9_readings
+            WHERE recorded_at >= %s
+            GROUP BY period
+            ORDER BY period
+            """,
+            (aligned_since,),
+        )
+    pollutant_by_period = {str(r["period"]): r for r in cursor.fetchall()}
+
+    cursor.execute(
+        f"""
+        SELECT {trend_period} as period,
+               MIN(DATE(timestamp)) as period_start,
+               ROUND(AVG(cough), 2) as cough,
+               ROUND(AVG(breathless), 2) as breathless,
+               ROUND(AVG(chest_tight), 2) as chest_tight,
+               ROUND(AVG(wheeze), 2) as wheeze,
+               ROUND(AVG(allergy), 2) as allergy,
+               ROUND(AVG(sore_throat), 2) as sore_throat,
+               ROUND(AVG(itchy_throat), 2) as itchy_throat,
+               ROUND(AVG(stuffy_nose), 2) as stuffy_nose,
+               ROUND(AVG(runny_nose), 2) as runny_nose,
+               ROUND(AVG(headache), 2) as headache,
+               ROUND(AVG(dizziness), 2) as dizziness,
+               ROUND(AVG(nausea), 2) as nausea,
+               ROUND(AVG(itchy_eyes), 2) as itchy_eyes,
+               ROUND(AVG(pm25), 2) as pm25_search
+        FROM google_trends
+        WHERE timestamp >= %s
+        GROUP BY period
+        ORDER BY period
+        """,
+        (aligned_since,),
+    )
+    trends_by_period = {str(r["period"]): r for r in cursor.fetchall()}
+    cursor.close()
+
+    illness_fields = [
+        "cough", "breathless", "chest_tight", "wheeze", "allergy", "sore_throat",
+        "itchy_throat", "stuffy_nose", "runny_nose", "headache", "dizziness",
+        "nausea", "itchy_eyes",
+    ]
+    rows = []
+    x_values = []
+    y_values = []
+
+    for period in sorted(pollutant_by_period):
+        pollutant_row = pollutant_by_period.get(period, {})
+        trend = trends_by_period.get(period, {})
+        if keyword == "illness_index":
+            trend_values = [_coerce_float(trend.get(field)) for field in illness_fields]
+            present_values = [value for value in trend_values if value is not None]
+            search_volume = (
+                round(sum(present_values) / len(present_values), 2)
+                if present_values
+                else None
+            )
+        else:
+            search_volume = _coerce_float(trend.get(keyword))
+
+        pollutant_value = _coerce_float(pollutant_row.get("pollutant_value"))
+        if pollutant_value is not None and search_volume is not None:
+            x_values.append(pollutant_value)
+            y_values.append(search_volume)
+
+        rows.append({
+            "period": period,
+            "period_start": pollutant_row.get("period_start") or trend.get("period_start"),
+            "pollutant_value": pollutant_value,
+            "search_volume": search_volume,
+        })
+
+    pearson_r = None
+    p_value = None
+    if len(x_values) >= 3 and len(set(x_values)) > 1 and len(set(y_values)) > 1:
+        r = np.corrcoef(x_values, y_values)[0, 1]
+        if not np.isnan(r):
+            pearson_r = round(float(r), 3)
+            df = len(x_values) - 2
+            t_stat = abs(r) * math.sqrt(df / max(1 - (r * r), 1e-12))
+            p = _student_t_two_tailed_p_value(t_stat, df)
+            p_value = round(float(p), 5) if p is not None else None
+
+    significant = bool(pearson_r is not None and p_value is not None and abs(pearson_r) >= 0.5 and p_value < 0.05)
+    if pearson_r is None or p_value is None:
+        interpretation = "Need at least 3 overlapping non-flat points to calculate Pearson r and p-value."
+    elif significant:
+        interpretation = f"Statistically meaningful relationship detected: r={pearson_r}, p={p_value}."
+    elif abs(pearson_r) >= 0.5:
+        interpretation = f"Correlation is visually strong (r={pearson_r}) but not statistically significant at p<0.05 (p={p_value})."
+    else:
+        interpretation = f"No strong statistically significant relationship in this window: r={pearson_r}, p={p_value}."
+
+    return VisualizationCorrelationScatterResponse(
+        visualization="correlation-scatter-pollution-vs-google-trends",
+        pollutant=pollutant,
+        pollutant_label=pollutant_labels[pollutant],
+        keyword=keyword,
+        keyword_label=keyword_labels[keyword],
+        period_days=days,
+        interval=interval,
+        pearson_r=pearson_r,
+        p_value=p_value,
+        significant=significant,
+        overlap_points=len(x_values),
+        interpretation=interpretation,
         count=len(rows),
         data=rows,
     )
