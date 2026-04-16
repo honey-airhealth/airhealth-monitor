@@ -2,6 +2,7 @@ import React from 'react'
 import { LineChart } from 'lucide-react'
 import DashboardHero from './DashboardHero.jsx'
 import CorrelationScatter from './visualization/CorrelationScatter.jsx'
+import HourlyHeatmap from './visualization/HourlyHeatmap.jsx'
 import TimeSeriesPollution from './visualization/TimeSeriesPollution.jsx'
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext.jsx'
 
@@ -35,6 +36,13 @@ const visualizationCards = [
     title: 'Correlation scatter plot',
     description: 'Paired pollutant and Google Trends points with Pearson r and p-value.',
     component: CorrelationScatter,
+  },
+  {
+    id: 'hourly-heatmap',
+    shortLabel: 'V3',
+    title: 'Hourly heatmap',
+    description: 'PM2.5 intensity by hour of day and day of week to reveal temporal patterns.',
+    component: HourlyHeatmap,
   },
 ]
 

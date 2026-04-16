@@ -45,3 +45,4 @@ export const getTrend           = (hours = 24)    => api.get('/trend', { params:
 export const getSafety          = (timestamp)     => api.get('/safety', { params: timestamp ? { timestamp } : {} })
 export const getVisualizationTimeSeries = (days = 84, interval = 'daily') => api.get('/visualization/time-series', { params: { days, interval } })
 export const getCorrelationScatter = (days = 14, pollutant = 'pm25', keyword = 'illness_index', interval = 'daily') => api.get('/visualization/correlation-scatter', { params: { days, pollutant, keyword, interval } })
+export const getHourlyHeatmap = (days = 30) => api.get('/visualization/hourly-heatmap', { params: { days } })

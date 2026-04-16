@@ -33,6 +33,8 @@ from app.models import (
     SourceRowsResponse,
     VisualizationCorrelationScatterResponse,
     VisualizationTimeSeriesResponse,
+    HourlyHeatmapCell,
+    HourlyHeatmapResponse,
     RiskLevel,
     TrendDirection,
 )
@@ -871,6 +873,59 @@ def visualization_correlation_scatter(
         interpretation=interpretation,
         count=len(rows),
         data=rows,
+    )
+
+
+# Visualization API 3: Hourly heatmap of PM2.5 intensity by hour of day and day of week.
+@router.get("/visualization/hourly-heatmap", response_model=HourlyHeatmapResponse,
+            summary="V3: Hourly PM2.5 heatmap (hour × day-of-week)")
+def v3_hourly_heatmap(days: int = Query(30, ge=7, le=90), conn=Depends(get_db)):
+    cursor = conn.cursor(dictionary=True)
+    since = datetime.now() - timedelta(days=days)
+
+    # DAYOFWEEK: 1=Sun…7=Sat → remap to 0=Mon…6=Sun
+    cursor.execute(
+        """SELECT
+               MOD(DAYOFWEEK(recorded_at) + 5, 7) AS day,
+               HOUR(recorded_at)                   AS hour,
+               ROUND(AVG(pm2_5), 2)                AS avg_pm25,
+               COUNT(*)                            AS cnt
+           FROM pms7003_readings
+           WHERE recorded_at >= %s
+           GROUP BY day, hour
+           ORDER BY day, hour""",
+        (since,),
+    )
+    rows = cursor.fetchall()
+    cursor.close()
+
+    cells = [
+        HourlyHeatmapCell(day=r["day"], hour=r["hour"], avg_pm25=r["avg_pm25"], count=r["cnt"])
+        for r in rows
+    ]
+
+    all_vals = [c.avg_pm25 for c in cells if c.avg_pm25 is not None]
+    overall_avg = round(sum(all_vals) / len(all_vals), 2) if all_vals else None
+
+    # peak hour: hour with highest average across all days
+    from collections import defaultdict
+    hour_sums: dict = defaultdict(list)
+    day_sums: dict = defaultdict(list)
+    for c in cells:
+        if c.avg_pm25 is not None:
+            hour_sums[c.hour].append(c.avg_pm25)
+            day_sums[c.day].append(c.avg_pm25)
+
+    peak_hour = max(hour_sums, key=lambda h: sum(hour_sums[h]) / len(hour_sums[h])) if hour_sums else None
+    worst_day = max(day_sums, key=lambda d: sum(day_sums[d]) / len(day_sums[d])) if day_sums else None
+
+    return HourlyHeatmapResponse(
+        visualization="hourly-heatmap-pm25",
+        period_days=days,
+        overall_avg=overall_avg,
+        peak_hour=peak_hour,
+        worst_day=worst_day,
+        cells=cells,
     )
 
 

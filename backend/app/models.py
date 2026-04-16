@@ -207,3 +207,19 @@ class VisualizationCorrelationScatterResponse(BaseModel):
     interpretation: str
     count: int
     data: list[VisualizationCorrelationScatterPoint]
+
+
+class HourlyHeatmapCell(BaseModel):
+    day: int        # 0=Mon … 6=Sun
+    hour: int       # 0-23
+    avg_pm25: Optional[float] = None
+    count: int = 0
+
+
+class HourlyHeatmapResponse(BaseModel):
+    visualization: str
+    period_days: int
+    overall_avg: Optional[float] = None
+    peak_hour: Optional[int] = None
+    worst_day: Optional[int] = None
+    cells: list[HourlyHeatmapCell]
