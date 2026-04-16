@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CartesianGrid, Legend, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from 'recharts'
+import { CartesianGrid, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from 'recharts'
 import { getCorrelationScatter } from '../../api'
 import { useApi } from '../../hooks/useApi'
 import { ErrorBox, Loader, MetricCard, SectionTitle } from '../api_dashboard/ui'
@@ -191,7 +191,6 @@ export default function CorrelationScatter() {
                 <YAxis type="number" dataKey="search_volume" name={keywordConfig.label} domain={yDomain} tick={{ fontSize: 10, fill: 'var(--t3)' }} label={{ value: `${keywordConfig.label} search volume`, angle: -90, position: 'insideLeft', fontSize: 10, fill: 'var(--t3)' }} />
                 <ZAxis range={[70, 70]} />
                 <Tooltip content={<ScatterTooltip />} />
-                <Legend align="center" verticalAlign="bottom" wrapperStyle={{ left: 0, right: 0, margin: '0 auto', textAlign: 'center', fontSize: 11, paddingTop: 20, transform: 'translateY(34px)' }} />
                 <Scatter name={`${pollutantConfig.label} vs ${keywordConfig.label}`} data={points} fill={pollutantConfig.color} stroke={keywordConfig.color} line={false} />
                 {regression.length === 2 && (
                   <Scatter name="fit line" data={regression} fill="transparent" line={{ stroke: '#13222c', strokeWidth: 1.5, strokeDasharray: '5 5' }} shape={() => null} />
@@ -199,6 +198,11 @@ export default function CorrelationScatter() {
                 {p != null && p < 0.05 && <ReferenceLine y={points.reduce((sum, point) => sum + point.search_volume, 0) / points.length} stroke="rgba(15,110,86,0.35)" strokeDasharray="4 4" />}
               </ScatterChart>
             </ResponsiveContainer>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 10, fontSize: 11, color: 'var(--t2)' }}>
+            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: pollutantConfig.color }} />
+            {`${pollutantConfig.label} vs ${keywordConfig.label}`}
           </div>
 
           {data?.interpretation && (

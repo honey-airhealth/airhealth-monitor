@@ -181,7 +181,8 @@ export default function VisualizationPage() {
           font-weight: 800;
           letter-spacing: -0.05em;
           color: #0f1f2e;
-          max-width: 14ch;
+          max-width: none;
+          white-space: nowrap;
         }
 
         .visualization-panel__description {
