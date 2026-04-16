@@ -35,6 +35,11 @@ from app.models import (
     VisualizationTimeSeriesResponse,
     HourlyHeatmapCell,
     HourlyHeatmapResponse,
+    RadarAxis,
+    RadarResponse,
+    MatrixVariable,
+    MatrixCell,
+    CorrelationMatrixResponse,
     RiskLevel,
     TrendDirection,
 )
@@ -925,6 +930,192 @@ def v3_hourly_heatmap(days: int = Query(30, ge=7, le=90), conn=Depends(get_db)):
         overall_avg=overall_avg,
         peak_hour=peak_hour,
         worst_day=worst_day,
+        cells=cells,
+    )
+
+
+# Visualization API 4: Multi-pollutant radar comparing today vs 7-day weekly average.
+@router.get("/visualization/radar-pollutant", response_model=RadarResponse,
+            summary="V4: Multi-pollutant radar — today vs weekly average")
+def v4_radar_pollutant(conn=Depends(get_db)):
+    cursor = conn.cursor(dictionary=True)
+    now = datetime.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = now - timedelta(days=7)
+
+    def avg(cursor, sql, params):
+        cursor.execute(sql, params)
+        row = cursor.fetchone()
+        return float(list(row.values())[0]) if row and list(row.values())[0] is not None else None
+
+    # Today averages (since midnight)
+    pm25_today   = avg(cursor, "SELECT AVG(pm2_5) FROM pms7003_readings WHERE recorded_at >= %s", (today_start,))
+    co_today     = avg(cursor, "SELECT AVG(mq9_raw) FROM mq9_readings WHERE recorded_at >= %s", (today_start,))
+    temp_today   = avg(cursor, "SELECT AVG(temperature) FROM ky015_readings WHERE recorded_at >= %s", (today_start,))
+    hum_today    = avg(cursor, "SELECT AVG(humidity) FROM ky015_readings WHERE recorded_at >= %s", (today_start,))
+    wind_today   = avg(cursor, "SELECT AVG(wind_speed_10m) FROM openmeteo_readings WHERE recorded_at >= %s", (today_start,))
+
+    # Weekly averages (last 7 days)
+    pm25_week    = avg(cursor, "SELECT AVG(pm2_5) FROM pms7003_readings WHERE recorded_at >= %s", (week_ago,))
+    co_week      = avg(cursor, "SELECT AVG(mq9_raw) FROM mq9_readings WHERE recorded_at >= %s", (week_ago,))
+    temp_week    = avg(cursor, "SELECT AVG(temperature) FROM ky015_readings WHERE recorded_at >= %s", (week_ago,))
+    hum_week     = avg(cursor, "SELECT AVG(humidity) FROM ky015_readings WHERE recorded_at >= %s", (week_ago,))
+    wind_week    = avg(cursor, "SELECT AVG(wind_speed_10m) FROM openmeteo_readings WHERE recorded_at >= %s", (week_ago,))
+    cursor.close()
+
+    # Reference max for normalization (domain-appropriate for Thai climate)
+    axes_cfg = [
+        ("pm25",  "PM2.5",       "µg/m³",  pm25_today,  pm25_week,  100.0),
+        ("co",    "CO / MQ9",    "raw",     co_today,    co_week,    800.0),
+        ("temp",  "Temperature", "°C",      temp_today,  temp_week,  45.0),
+        ("hum",   "Humidity",    "%",       hum_today,   hum_week,   100.0),
+        ("wind",  "Wind",        "km/h",    wind_today,  wind_week,  30.0),
+    ]
+
+    def norm(val, max_ref):
+        if val is None or max_ref == 0:
+            return None
+        return round(min(val / max_ref, 1.0), 4)
+
+    axes = [
+        RadarAxis(
+            key=key, label=label, unit=unit,
+            today=round(t, 2) if t is not None else None,
+            weekly_avg=round(w, 2) if w is not None else None,
+            today_norm=norm(t, mx),
+            weekly_norm=norm(w, mx),
+            max_ref=mx,
+        )
+        for key, label, unit, t, w, mx in axes_cfg
+    ]
+
+    return RadarResponse(
+        visualization="multi-pollutant-radar",
+        snapshot_at=now,
+        axes=axes,
+    )
+
+
+# Visualization API 5: Full NxN symmetric correlation matrix (sensors + selected keywords).
+@router.get("/visualization/correlation-matrix", response_model=CorrelationMatrixResponse,
+            summary="V5: Full symmetric correlation matrix")
+def v5_correlation_matrix(
+    days: int = Query(30, ge=7, le=365),
+    keywords: str = Query("headache,cough,breathless,allergy", description="Comma-separated keyword keys"),
+    conn=Depends(get_db),
+):
+    ILLNESS_FIELDS = [
+        "cough", "breathless", "chest_tight", "wheeze", "allergy", "sore_throat",
+        "itchy_throat", "stuffy_nose", "runny_nose", "headache", "dizziness",
+        "nausea", "itchy_eyes",
+    ]
+    KEYWORD_LABELS = {
+        "illness_index": "Illness idx", "cough": "Cough", "breathless": "Breathless",
+        "chest_tight": "Chest tight", "wheeze": "Wheeze", "allergy": "Allergy",
+        "sore_throat": "Sore throat", "itchy_throat": "Itchy throat",
+        "stuffy_nose": "Stuffy nose", "runny_nose": "Runny nose", "headache": "Headache",
+        "dizziness": "Dizziness", "nausea": "Nausea", "itchy_eyes": "Itchy eyes",
+        "pm25_search": "PM2.5 search",
+    }
+    selected_kws = [k.strip() for k in keywords.split(",") if k.strip() in KEYWORD_LABELS]
+
+    cursor = conn.cursor(dictionary=True)
+    since = datetime.now() - timedelta(days=days)
+
+    cursor.execute("""
+        SELECT DATE(recorded_at) as period, ROUND(AVG(pm2_5), 2) as v
+        FROM pms7003_readings WHERE recorded_at >= %s GROUP BY period""", (since,))
+    pm25_ser = {str(r["period"]): r["v"] for r in cursor.fetchall()}
+
+    cursor.execute("""
+        SELECT DATE(recorded_at) as period, ROUND(AVG(mq9_raw), 2) as v
+        FROM mq9_readings WHERE recorded_at >= %s GROUP BY period""", (since,))
+    co_ser = {str(r["period"]): r["v"] for r in cursor.fetchall()}
+
+    cursor.execute("""
+        SELECT DATE(recorded_at) as period,
+               ROUND(AVG(temperature), 2) as temp, ROUND(AVG(humidity), 2) as humid
+        FROM ky015_readings WHERE recorded_at >= %s GROUP BY period""", (since,))
+    temp_ser, humid_ser = {}, {}
+    for r in cursor.fetchall():
+        temp_ser[str(r["period"])] = r["temp"]
+        humid_ser[str(r["period"])] = r["humid"]
+
+    cursor.execute("""
+        SELECT DATE(timestamp) as period,
+               ROUND(AVG(cough),2) as cough, ROUND(AVG(breathless),2) as breathless,
+               ROUND(AVG(chest_tight),2) as chest_tight, ROUND(AVG(wheeze),2) as wheeze,
+               ROUND(AVG(allergy),2) as allergy, ROUND(AVG(sore_throat),2) as sore_throat,
+               ROUND(AVG(itchy_throat),2) as itchy_throat, ROUND(AVG(stuffy_nose),2) as stuffy_nose,
+               ROUND(AVG(runny_nose),2) as runny_nose, ROUND(AVG(headache),2) as headache,
+               ROUND(AVG(dizziness),2) as dizziness, ROUND(AVG(nausea),2) as nausea,
+               ROUND(AVG(itchy_eyes),2) as itchy_eyes, ROUND(AVG(pm25),2) as pm25_search
+        FROM google_trends WHERE timestamp >= %s GROUP BY period""", (since,))
+    trends_ser = {str(r["period"]): r for r in cursor.fetchall()}
+    cursor.close()
+
+    all_periods = sorted(
+        set(pm25_ser) | set(co_ser) | set(temp_ser) | set(humid_ser) | set(trends_ser)
+    )
+
+    # Pre-compute illness_index
+    illness_idx_ser = {}
+    for p in all_periods:
+        t = trends_ser.get(p, {})
+        vals = [_coerce_float(t.get(f)) for f in ILLNESS_FIELDS]
+        present = [v for v in vals if v is not None]
+        illness_idx_ser[p] = round(sum(present) / len(present), 2) if present else None
+
+    def get_series(key):
+        if key == "pm25":    return pm25_ser
+        if key == "co":      return co_ser
+        if key == "temp":    return temp_ser
+        if key == "humid":   return humid_ser
+        if key == "illness_index": return illness_idx_ser
+        return {p: _coerce_float(trends_ser.get(p, {}).get(key)) for p in all_periods}
+
+    SENSOR_VARS = [
+        MatrixVariable(key="pm25",  label="PM2.5",    group="sensor"),
+        MatrixVariable(key="co",    label="CO / MQ9", group="sensor"),
+        MatrixVariable(key="temp",  label="Temp",     group="sensor"),
+        MatrixVariable(key="humid", label="Humid",    group="sensor"),
+    ]
+    kw_vars = [MatrixVariable(key=k, label=KEYWORD_LABELS[k], group="keyword") for k in selected_kws]
+    variables = SENSOR_VARS + kw_vars
+    var_keys = [v.key for v in variables]
+
+    series_cache = {k: get_series(k) for k in var_keys}
+
+    def pearson_cell(row_key, col_key):
+        if row_key == col_key:
+            return MatrixCell(row=row_key, col=col_key, r=1.0, p_value=0.0, significant=True, n=len(all_periods))
+        sx, sy = series_cache[row_key], series_cache[col_key]
+        x, y = [], []
+        for p in all_periods:
+            xv, yv = _coerce_float(sx.get(p)), _coerce_float(sy.get(p))
+            if xv is not None and yv is not None:
+                x.append(xv); y.append(yv)
+        r = pv = None
+        if len(x) >= 3 and len(set(x)) > 1 and len(set(y)) > 1:
+            rv = np.corrcoef(x, y)[0, 1]
+            if not np.isnan(rv):
+                r = round(float(rv), 2)
+                df = len(x) - 2
+                t_stat = abs(rv) * math.sqrt(df / max(1 - rv ** 2, 1e-12))
+                p_raw = _student_t_two_tailed_p_value(t_stat, df)
+                pv = round(float(p_raw), 5) if p_raw is not None else None
+        return MatrixCell(
+            row=row_key, col=col_key, r=r, p_value=pv,
+            significant=bool(r is not None and pv is not None and abs(r) >= 0.5 and pv < 0.05),
+            n=len(x),
+        )
+
+    cells = [pearson_cell(r, c) for r in var_keys for c in var_keys]
+
+    return CorrelationMatrixResponse(
+        visualization="correlation-matrix",
+        period_days=days,
+        variables=variables,
         cells=cells,
     )
 

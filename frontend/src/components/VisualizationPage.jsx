@@ -1,8 +1,10 @@
 import React from 'react'
 import { LineChart } from 'lucide-react'
 import DashboardHero from './DashboardHero.jsx'
+import CorrelationMatrix from './visualization/CorrelationMatrix.jsx'
 import CorrelationScatter from './visualization/CorrelationScatter.jsx'
 import HourlyHeatmap from './visualization/HourlyHeatmap.jsx'
+import MultiPollutantRadar from './visualization/MultiPollutantRadar.jsx'
 import TimeSeriesPollution from './visualization/TimeSeriesPollution.jsx'
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext.jsx'
 
@@ -43,6 +45,20 @@ const visualizationCards = [
     title: 'Hourly heatmap',
     description: 'PM2.5 intensity by hour of day and day of week to reveal temporal patterns.',
     component: HourlyHeatmap,
+  },
+  {
+    id: 'multi-pollutant-radar',
+    shortLabel: 'V4',
+    title: 'Multi-pollutant radar',
+    description: 'PM2.5, CO, temperature, humidity and wind — today vs 7-day average on a radar shape.',
+    component: MultiPollutantRadar,
+  },
+  {
+    id: 'correlation-matrix',
+    shortLabel: 'V5',
+    title: 'Correlation matrix',
+    description: 'Pearson r between every pollutant and health keyword pair — spot which variables truly matter.',
+    component: CorrelationMatrix,
   },
 ]
 

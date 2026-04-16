@@ -223,3 +223,42 @@ class HourlyHeatmapResponse(BaseModel):
     peak_hour: Optional[int] = None
     worst_day: Optional[int] = None
     cells: list[HourlyHeatmapCell]
+
+
+class RadarAxis(BaseModel):
+    key: str
+    label: str
+    unit: str
+    today: Optional[float] = None
+    weekly_avg: Optional[float] = None
+    today_norm: Optional[float] = None      # 0–1 normalized
+    weekly_norm: Optional[float] = None     # 0–1 normalized
+    max_ref: float                          # reference max used for normalization
+
+
+class RadarResponse(BaseModel):
+    visualization: str
+    snapshot_at: Optional[datetime] = None
+    axes: list[RadarAxis]
+
+
+class MatrixVariable(BaseModel):
+    key: str
+    label: str
+    group: str   # 'sensor' | 'keyword'
+
+
+class MatrixCell(BaseModel):
+    row: str
+    col: str
+    r: Optional[float] = None
+    p_value: Optional[float] = None
+    significant: bool = False
+    n: int = 0
+
+
+class CorrelationMatrixResponse(BaseModel):
+    visualization: str
+    period_days: int
+    variables: list[MatrixVariable]
+    cells: list[MatrixCell]
