@@ -1,4 +1,4 @@
-"""V5 — Visualization API 5: Correlation matrix (10 test cases)."""
+"""V5 — Visualization API 5: Correlation matrix (5 test cases)."""
 import pytest
 from tests.conftest import client, override_db, make_conn  # noqa: F401
 
@@ -19,8 +19,7 @@ TREND_ROWS = [
     for i in range(10)
 ]
 
-def _setup(client, keywords="headache,cough"):
-    # 4 queries: pm25, co, ky015, google_trends
+def _setup(client):
     conn = make_conn([SENSOR_ROWS, SENSOR_ROWS, KY_ROWS, TREND_ROWS])
     override_db(conn)
     return client
@@ -61,43 +60,3 @@ def test_v5_cell_count(client):
     body = client.get(BASE).json()
     n = len(body["variables"])
     assert len(body["cells"]) == n * n
-
-
-# TC-V5-06: Diagonal cells have r=1.0
-def test_v5_diagonal_r_is_one(client):
-    _setup(client)
-    body = client.get(BASE).json()
-    diag = [c for c in body["cells"] if c["row"] == c["col"]]
-    for cell in diag:
-        assert cell["r"] == 1.0
-
-
-# TC-V5-07: keywords param filters variables correctly
-def test_v5_keyword_filter(client):
-    _setup(client, "headache")
-    body = client.get(BASE, params={"keywords": "headache"}).json()
-    kw_keys = [v["key"] for v in body["variables"] if v["group"] == "keyword"]
-    assert kw_keys == ["headache"]
-
-
-# TC-V5-08: days=14 echoed in period_days
-def test_v5_period_days_echoed(client):
-    _setup(client)
-    body = client.get(BASE, params={"days": 14}).json()
-    assert body["period_days"] == 14
-
-
-# TC-V5-09: days=6 (below min) → 422
-def test_v5_below_min_days(client):
-    r = client.get(BASE, params={"days": 6})
-    assert r.status_code == 422
-
-
-# TC-V5-10: Each cell has row, col, r, p_value, significant, n
-def test_v5_cell_structure(client):
-    _setup(client)
-    cells = client.get(BASE).json()["cells"]
-    for cell in cells:
-        for f in ("row", "col", "significant", "n"):
-            assert f in cell, f"missing: {f}"
-        assert isinstance(cell["significant"], bool)

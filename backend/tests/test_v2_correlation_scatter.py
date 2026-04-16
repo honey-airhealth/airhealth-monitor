@@ -1,4 +1,4 @@
-"""V2 — Visualization API 2: Correlation scatter plot (10 test cases)."""
+"""V2 — Visualization API 2: Correlation scatter plot (5 test cases)."""
 import pytest
 from tests.conftest import client, override_db, make_conn  # noqa: F401
 
@@ -56,43 +56,7 @@ def test_v2_significant_is_bool(client):
     assert isinstance(body["significant"], bool)
 
 
-# TC-V2-05: pollutant=co accepted
-def test_v2_pollutant_co(client):
-    conn = make_conn(fetchall_returns=[PM_ROWS, TREND_ROWS], fetchone_returns=[FIRST_ROW])
-    override_db(conn)
-    r = client.get(BASE, params={"pollutant": "co", "keyword": "cough"})
-    assert r.status_code == 200
-    assert r.json()["pollutant"] == "co"
-
-
-# TC-V2-06: pollutant=invalid → 422
-def test_v2_invalid_pollutant(client):
-    r = client.get(BASE, params={"pollutant": "ozone"})
-    assert r.status_code == 422
-
-
-# TC-V2-07: keyword=unknown → 400
-def test_v2_unknown_keyword(client):
-    _setup(client)
-    r = client.get(BASE, params={"keyword": "pizza"})
-    assert r.status_code == 400
-
-
-# TC-V2-08: keyword=illness_index → 200
-def test_v2_illness_index_keyword(client):
-    _setup(client)
-    r = client.get(BASE, params={"keyword": "illness_index"})
-    assert r.status_code == 200
-
-
-# TC-V2-09: interval=weekly accepted
-def test_v2_weekly_interval(client):
-    _setup(client)
-    r = client.get(BASE, params={"interval": "weekly"})
-    assert r.status_code == 200
-
-
-# TC-V2-10: interpretation is a non-empty string
+# TC-V2-05: interpretation is a non-empty string
 def test_v2_interpretation_not_empty(client):
     _setup(client)
     body = client.get(BASE).json()

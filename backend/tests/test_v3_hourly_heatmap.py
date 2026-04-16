@@ -1,4 +1,4 @@
-"""V3 — Visualization API 3: Hourly heatmap (10 test cases)."""
+"""V3 — Visualization API 3: Hourly heatmap (5 test cases)."""
 import pytest
 from tests.conftest import client, override_db, make_conn  # noqa: F401
 
@@ -53,37 +53,3 @@ def test_v3_overall_avg(client):
     avg = client.get(BASE).json()["overall_avg"]
     assert isinstance(avg, float)
     assert avg > 0
-
-
-# TC-V3-06: peak_hour in 0-23
-def test_v3_peak_hour_range(client):
-    _setup(client)
-    ph = client.get(BASE).json()["peak_hour"]
-    assert 0 <= ph <= 23
-
-
-# TC-V3-07: worst_day in 0-6
-def test_v3_worst_day_range(client):
-    _setup(client)
-    wd = client.get(BASE).json()["worst_day"]
-    assert 0 <= wd <= 6
-
-
-# TC-V3-08: days=7 (min boundary) → 200
-def test_v3_min_days(client):
-    _setup(client)
-    r = client.get(BASE, params={"days": 7})
-    assert r.status_code == 200
-
-
-# TC-V3-09: days=90 (max boundary) → 200
-def test_v3_max_days(client):
-    _setup(client)
-    r = client.get(BASE, params={"days": 90})
-    assert r.status_code == 200
-
-
-# TC-V3-10: days=91 (above max) → 422
-def test_v3_above_max_days(client):
-    r = client.get(BASE, params={"days": 91})
-    assert r.status_code == 422

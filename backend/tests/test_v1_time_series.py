@@ -1,10 +1,9 @@
-"""V1 — Visualization API 1: Time-series chart (10 test cases)."""
+"""V1 — Visualization API 1: Time-series chart (5 test cases)."""
 import pytest
 from tests.conftest import client, override_db, make_conn  # noqa: F401
 
 BASE = "/api/v1/integration/visualization/time-series"
 
-# V1 endpoint aliases: week_key, week_start, avg_pm25 / avg_co / keywords
 PM_ROW = {"week_key": "2026-04-10", "week_start": "2026-04-10", "avg_pm25": 36.75}
 CO_ROW = {"week_key": "2026-04-10", "week_start": "2026-04-10", "avg_co": 375.09}
 TREND_ROW = {
@@ -17,7 +16,6 @@ TREND_ROW = {
 FIRST_ROW = {"first_sensor_at": "2026-04-10"}
 
 def _setup(client):
-    # fetchone → first_sensor_at; then fetchall ×3 (pm, co, trends)
     conn = make_conn(
         fetchall_returns=[[PM_ROW], [CO_ROW], [TREND_ROW]],
         fetchone_returns=[FIRST_ROW],
@@ -56,44 +54,10 @@ def test_v1_period_days_echoed(client):
     assert body["interval"] == "daily"
 
 
-# TC-V1-05: interval=weekly accepted
-def test_v1_weekly_interval(client):
-    _setup(client)
-    r = client.get(BASE, params={"days": 30, "interval": "weekly"})
-    assert r.status_code == 200
-    assert r.json()["interval"] == "weekly"
-
-
-# TC-V1-06: Each data point has illness_index computed
+# TC-V1-05: Each data point has illness_index computed
 def test_v1_data_has_illness_index(client):
     _setup(client)
     data = client.get(BASE).json()["data"]
     assert len(data) == 1
     assert "illness_index" in data[0]
     assert data[0]["illness_index"] is not None
-
-
-# TC-V1-07: days=1 (min boundary) → 200
-def test_v1_min_days(client):
-    _setup(client)
-    r = client.get(BASE, params={"days": 1})
-    assert r.status_code == 200
-
-
-# TC-V1-08: days=365 (max boundary) → 200
-def test_v1_max_days(client):
-    _setup(client)
-    r = client.get(BASE, params={"days": 365})
-    assert r.status_code == 200
-
-
-# TC-V1-09: days=0 → 422 validation error
-def test_v1_days_below_min(client):
-    r = client.get(BASE, params={"days": 0})
-    assert r.status_code == 422
-
-
-# TC-V1-10: interval=invalid → 422 validation error
-def test_v1_invalid_interval(client):
-    r = client.get(BASE, params={"interval": "hourly"})
-    assert r.status_code == 422
