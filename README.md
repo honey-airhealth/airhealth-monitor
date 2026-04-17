@@ -70,35 +70,36 @@ The API delivers processed, health-relevant outputs rather than raw measurements
 
 ---
 
-## Frontend
+## Run the Project
 
-A React dashboard scaffold now lives in `frontend/`. It is built for the AirHealth Monitor use case and currently uses mock data shaped around the existing sensor payloads:
+This project can be run in 3 common ways depending on what you want to test.
 
-- PMS7003 for PM1.0 / PM2.5 / PM10
-- KY-015 for temperature and humidity
-- MQ-9 for CO-related readings
+### Option 1: Run everything with Docker Compose
 
-### Run the React app
+Use this if you want the local stack with frontend, backend, MySQL, and Node-RED.
 
 ```bash
-cd frontend
-npm install
-npm run dev
+docker compose up --build
 ```
 
-Then open the local Vite URL, usually `http://localhost:5173`.
+Then open:
 
-### Next integration step
+- Frontend: `http://localhost:5173`
+- Backend health: `http://localhost:8000/health`
+- Backend docs: `http://localhost:8000/docs`
+- Node-RED: `http://localhost:1880`
 
-Replace the mock snapshot in `frontend/src/data/mockData.js` with data fetched from your backend or MQTT bridge so the dashboard reflects live sensor values.
+### Seed 7 days of test data for Docker Compose
 
----
+After the containers are running, seed sample data into MySQL:
 
-## Backend
+```bash
+curl -X POST "http://localhost:8000/api/v1/integration/seed-test-data?days=7&clear_existing=true"
+```
 
-A minimal FastAPI backend now lives in `backend/`. It provides a clean starting point for sensor ingestion and frontend integration.
+### Option 2: Run backend only on your machine
 
-### Run the API
+Use this if you want to work on the FastAPI app directly without Docker.
 
 ```bash
 cd backend
@@ -113,11 +114,68 @@ Then open:
 - `http://127.0.0.1:8000/health`
 - `http://127.0.0.1:8000/docs`
 
+### Seed 7 days of test data for local backend
+
+If your backend can connect to MySQL through `.env`, you can seed data in 2 ways.
+
+Using the script:
+
+```bash
+cd backend
+python3 seed_mysql.py
+```
+
+Using the API:
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/integration/seed-test-data?days=7&clear_existing=true"
+```
+
+### Option 3: Run frontend only on your machine
+
+Use this if you want to work on the React app directly.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Then open the local Vite URL, usually `http://localhost:5173`.
+
+If you want the frontend to call the backend, set the API base in your env file before starting it.
+
+### Frontend and backend together without Docker
+
+Run backend in one terminal:
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+Run frontend in another terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+- Frontend: `http://localhost:5173`
+- Backend docs: `http://localhost:8000/docs`
+
 ### Current API routes
 
 - `GET /health`
 - `GET /api/v1/readings/latest`
 - `POST /api/v1/readings`
+- `POST /api/v1/integration/seed-test-data`
 - `GET /api/v1/integration/health-risk`
 - `GET /api/v1/integration/correlation`
 - `GET /api/v1/integration/discomfort`
