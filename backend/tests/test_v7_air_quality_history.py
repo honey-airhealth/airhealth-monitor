@@ -1,0 +1,52 @@
+"""V7 — Visualization API 7: Air quality history (5 test cases)."""
+import pytest
+from tests.conftest import client, override_db, make_conn  # noqa: F401
+
+BASE = "/api/v1/integration/history"
+
+PM_ROWS  = [{"period": f"2026-04-{10+i:02d} 00:00:00", "avg_pm25": 30.0 + i} for i in range(7)]
+KY_ROWS  = [{"period": f"2026-04-{10+i:02d} 00:00:00", "avg_temperature": 28.0 + i * 0.2, "avg_humidity": 60.0 + i} for i in range(7)]
+MQ_ROWS  = [{"period": f"2026-04-{10+i:02d} 00:00:00", "avg_mq9": 300.0 + i * 5} for i in range(7)]
+
+def _setup(client):
+    conn = make_conn([PM_ROWS, KY_ROWS, MQ_ROWS])
+    override_db(conn)
+    return client
+
+
+# TC-V7-01: Default params → 200
+def test_v7_default(client):
+    _setup(client)
+    r = client.get(BASE)
+    assert r.status_code == 200
+
+
+# TC-V7-02: Response has interval, count, data fields
+def test_v7_schema(client):
+    _setup(client)
+    body = client.get(BASE).json()
+    for f in ("interval", "count", "data"):
+        assert f in body, f"missing: {f}"
+
+
+# TC-V7-03: interval=daily echoed back
+def test_v7_daily_interval(client):
+    _setup(client)
+    body = client.get(BASE, params={"interval": "daily"}).json()
+    assert body["interval"] == "daily"
+
+
+# TC-V7-04: count matches length of data array
+def test_v7_count_matches_data(client):
+    _setup(client)
+    body = client.get(BASE).json()
+    assert body["count"] == len(body["data"])
+
+
+# TC-V7-05: Each data point has period field
+def test_v7_data_has_period(client):
+    _setup(client)
+    body = client.get(BASE).json()
+    assert len(body["data"]) > 0
+    for d in body["data"]:
+        assert "period" in d
