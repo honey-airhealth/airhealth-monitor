@@ -197,9 +197,14 @@ export default function AiChatPage() {
                 {messages.map((message, index) => {
                   const fromUser = message.role === "user";
                   return (
-                    <div key={`${message.role}-${index}`} className={`flex ${fromUser ? "justify-end" : "justify-start"}`}>
+                    <div key={`${message.role}-${index}`} className={`flex items-start gap-3 ${fromUser ? "justify-end" : "justify-start"}`}>
+                      {!fromUser ? (
+                        <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white shadow-sm ring-4 ring-white">
+                          <Bot className="size-4.5" />
+                        </div>
+                      ) : null}
                       <div
-                        className={`max-w-[94%] rounded-[1.1rem] px-4 py-3 text-[13px] leading-5 shadow-sm ${
+                        className={`max-w-[calc(94%-48px)] rounded-[1.1rem] px-4 py-3 text-[13px] leading-5 shadow-sm ${
                           fromUser
                             ? "bg-slate-950 text-white"
                             : "border border-slate-100 bg-white text-slate-700"
@@ -210,12 +215,20 @@ export default function AiChatPage() {
                         </div>
                         <div className="whitespace-pre-wrap">{message.content}</div>
                       </div>
+                      {fromUser ? (
+                        <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-[10px] font-black tracking-[0.08em] text-cyan-700 shadow-sm ring-4 ring-white">
+                          ME
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}
 
                 {sending ? (
-                  <div className="flex justify-start">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white shadow-sm ring-4 ring-white">
+                      <Bot className="size-4.5" />
+                    </div>
                     <div className="rounded-[1.1rem] border border-slate-100 bg-white px-4 py-3 text-[13px] font-semibold text-slate-500 shadow-sm">
                       AirHealth AI is thinking...
                     </div>
