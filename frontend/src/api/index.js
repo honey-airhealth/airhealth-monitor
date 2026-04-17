@@ -48,3 +48,4 @@ export const getCorrelationScatter = (days = 14, pollutant = 'pm25', keyword = '
 export const getHourlyHeatmap     = (days = 30) => api.get('/visualization/hourly-heatmap', { params: { days } })
 export const getRadarPollutant      = ()                                          => api.get('/visualization/radar-pollutant')
 export const getCorrelationMatrix   = (days = 30, keywords = 'headache,cough,breathless,allergy') => api.get('/visualization/correlation-matrix', { params: { days, keywords } })
+export const getSensorValidation    = (days = 14) => api.get('/visualization/sensor-validation', { params: { days } })

@@ -6,6 +6,7 @@ import CorrelationScatter from './visualization/CorrelationScatter.jsx'
 import HourlyHeatmap from './visualization/HourlyHeatmap.jsx'
 import MultiPollutantRadar from './visualization/MultiPollutantRadar.jsx'
 import TimeSeriesPollution from './visualization/TimeSeriesPollution.jsx'
+import SensorValidation from './visualization/SensorValidation.jsx'
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext.jsx'
 
 const pageStyle = {
@@ -59,6 +60,13 @@ const visualizationCards = [
     title: 'Correlation matrix',
     description: 'Pearson r between every pollutant and health keyword pair — spot which variables truly matter.',
     component: CorrelationMatrix,
+  },
+  {
+    id: 'sensor-validation',
+    shortLabel: 'V6',
+    title: 'Sensor validation',
+    description: 'Compare PMS7003 readings against the nearest official PM2.5 station — RMSE shows how accurate your sensor is.',
+    component: SensorValidation,
   },
 ]
 

@@ -291,3 +291,19 @@ class SeedTestDataResponse(BaseModel):
     clear_existing: bool
     inserted_rows: SeedCountsResponse
     latest_snapshot: SeedLatestSnapshotResponse
+
+
+class SensorValidationPoint(BaseModel):
+    period: str
+    sensor_pm25: Optional[float] = None
+    reference_pm25: Optional[float] = None
+
+
+class SensorValidationResponse(BaseModel):
+    visualization: str
+    period_days: int
+    station_name: str
+    rmse: Optional[float] = None
+    correlation: Optional[float] = None
+    n_overlap: int
+    data: list[SensorValidationPoint]

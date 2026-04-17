@@ -42,6 +42,8 @@ from app.models import (
     MatrixCell,
     CorrelationMatrixResponse,
     SeedTestDataResponse,
+    SensorValidationPoint,
+    SensorValidationResponse,
     RiskLevel,
     TrendDirection,
     SensorReading,
@@ -1330,4 +1332,76 @@ def get_source_rows(
         total_pages=total_pages,
         columns=config["columns"],
         rows=rows,
+    )
+
+
+# Visualization API 6: Sensor validation — PMS7003 vs official PM2.5 station, RMSE & Pearson r.
+@router.get(
+    "/visualization/sensor-validation",
+    response_model=SensorValidationResponse,
+    summary="V6: Sensor validation — PMS7003 vs official reference station",
+)
+def v6_sensor_validation(
+    days: int = Query(14, ge=7, le=90),
+    conn=Depends(get_db),
+):
+    cursor = conn.cursor(dictionary=True)
+    since = datetime.now() - timedelta(days=days)
+
+    cursor.execute(
+        """
+        SELECT DATE(recorded_at) AS period, ROUND(AVG(pm2_5), 2) AS sensor_pm25
+        FROM pms7003_readings
+        WHERE recorded_at >= %s
+        GROUP BY DATE(recorded_at)
+        ORDER BY period
+        """,
+        (since,),
+    )
+    sensor_by_day = {str(r["period"]): r["sensor_pm25"] for r in cursor.fetchall()}
+
+    cursor.execute(
+        """
+        SELECT DATE(recorded_at) AS period,
+               ROUND(AVG(pm25), 2) AS reference_pm25,
+               MIN(station_name) AS station_name
+        FROM official_pm25
+        WHERE recorded_at >= %s
+        GROUP BY DATE(recorded_at)
+        ORDER BY period
+        """,
+        (since,),
+    )
+    ref_rows = cursor.fetchall()
+    ref_by_day = {str(r["period"]): r["reference_pm25"] for r in ref_rows}
+    station_name = ref_rows[0]["station_name"] if ref_rows else "N/A"
+
+    all_dates = sorted(set(list(sensor_by_day.keys()) + list(ref_by_day.keys())))
+    data = []
+    pairs = []
+    for d in all_dates:
+        s = sensor_by_day.get(d)
+        r = ref_by_day.get(d)
+        data.append(SensorValidationPoint(period=d, sensor_pm25=s, reference_pm25=r))
+        if s is not None and r is not None:
+            pairs.append((float(s), float(r)))
+
+    rmse = None
+    correlation = None
+    if pairs:
+        rmse = round((sum((s - r) ** 2 for s, r in pairs) / len(pairs)) ** 0.5, 2)
+        if len(pairs) >= 2:
+            s_arr = np.array([p[0] for p in pairs])
+            r_arr = np.array([p[1] for p in pairs])
+            if s_arr.std() > 0 and r_arr.std() > 0:
+                correlation = round(float(np.corrcoef(s_arr, r_arr)[0, 1]), 3)
+
+    return SensorValidationResponse(
+        visualization="sensor-validation",
+        period_days=days,
+        station_name=station_name,
+        rmse=rmse,
+        correlation=correlation,
+        n_overlap=len(pairs),
+        data=data,
     )
