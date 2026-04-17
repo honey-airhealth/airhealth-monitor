@@ -112,6 +112,23 @@ class SourceRowsResponse(BaseModel):
     rows: list[dict[str, Any]]
 
 
+class AIChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(..., min_length=1, max_length=3000)
+
+
+class AIChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=3000)
+    history: list[AIChatMessage] = Field(default_factory=list, max_length=10)
+
+
+class AIChatResponse(BaseModel):
+    answer: str
+    model: str
+    generated_at: datetime
+    snapshot: Optional[dict[str, Any]] = None
+
+
 class VisualizationTimeSeriesPoint(BaseModel):
     week: str
     week_start: Optional[date] = None

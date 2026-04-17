@@ -15,11 +15,15 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from datetime import datetime, timedelta
 from typing import Optional
 import math
+import os
 import numpy as np
+import requests
 
 from app.store import get_db
 from app.seed import seed_test_data
 from app.models import (
+    AIChatRequest,
+    AIChatResponse,
     HealthRiskResponse,
     WorstHoursResponse,
     TrendResponse,
@@ -115,6 +119,44 @@ GOOGLE_TRENDS_KEYWORDS = [
     ("itchy_eyes", "Itchy eyes", "itchy_eyes"),
     ("pm25_search", "PM2.5 search", "pm25"),
 ]
+
+AI_SYSTEM_INSTRUCTION = """
+You are AirHealth AI, an English-first assistant for the AirHealth Monitor dashboard.
+Answer in the same language as the user's question. Use English by default only when the language is unclear.
+Focus on practical first steps for PM2.5, air pollution exposure, cough, headache, throat irritation,
+breathing discomfort, allergy-like symptoms, and when to seek medical care.
+Use the live sensor context when provided, but do not claim to diagnose disease.
+For severe symptoms such as chest pain, severe breathing difficulty, confusion, fainting,
+blue lips, or symptoms that rapidly worsen, tell the user to seek urgent medical help.
+Keep answers concise, actionable, and easy for a general user to follow.
+"""
+
+
+def _ai_snapshot_context(conn) -> dict:
+    try:
+        sensor = _latest_combined(conn)
+        official = _get_official_pm25(conn)
+        score, level, main, _contribs, rec = _calc_risk(
+            sensor["pm2_5"],
+            sensor["mq9_raw"],
+            sensor["temperature"],
+            sensor["humidity"],
+            official,
+        )
+        return {
+            "recorded_at": sensor["recorded_at"].isoformat() if sensor.get("recorded_at") else None,
+            "pm2_5": round(sensor["pm2_5"], 2),
+            "mq9_raw": round(sensor["mq9_raw"], 2),
+            "temperature": round(sensor["temperature"], 2),
+            "humidity": round(sensor["humidity"], 2),
+            "official_pm25": round(official, 2) if official is not None else None,
+            "risk_score": round(score, 2),
+            "risk_level": level.value,
+            "main_contributor": main,
+            "recommendation": rec,
+        }
+    except HTTPException:
+        return {}
 
 
 def _sync_in_memory_readings(snapshot: dict) -> None:
@@ -1540,4 +1582,102 @@ def statistic_4_wind_speed(
         data=data,
     )
 
+# API AI: Gemini chat assistant for PM2.5, cough, headache, and first-care guidance.
+@router.post("/ai-chat", response_model=AIChatResponse, summary="AirHealth AI chat powered by Gemini")
+def airhealth_ai_chat(payload: AIChatRequest, conn=Depends(get_db)):
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="GEMINI_API_KEY is not configured. Add it to the backend environment before using AI chat.",
+        )
 
+    primary_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-lite")
+    fallback_models = [
+        item.strip()
+        for item in os.getenv("GEMINI_FALLBACK_MODELS", "gemini-2.0-flash,gemini-2.5-flash-lite").split(",")
+        if item.strip()
+    ]
+    models_to_try = list(dict.fromkeys([primary_model, *fallback_models]))
+    snapshot = _ai_snapshot_context(conn)
+    context_lines = [
+        "Live AirHealth sensor context:",
+        f"- PM2.5: {snapshot.get('pm2_5', 'unknown')} ug/m3",
+        f"- MQ-9 raw: {snapshot.get('mq9_raw', 'unknown')}",
+        f"- Temperature: {snapshot.get('temperature', 'unknown')} C",
+        f"- Humidity: {snapshot.get('humidity', 'unknown')}%",
+        f"- Official PM2.5: {snapshot.get('official_pm25', 'unknown')} ug/m3",
+        f"- Risk level: {snapshot.get('risk_level', 'unknown')}",
+        f"- Current recommendation: {snapshot.get('recommendation', 'unknown')}",
+    ]
+
+    contents = []
+    for item in payload.history[-10:]:
+        contents.append({
+            "role": "model" if item.role == "assistant" else "user",
+            "parts": [{"text": item.content}],
+        })
+    contents.append({
+        "role": "user",
+        "parts": [{"text": "\n".join(context_lines) + f"\n\nUser question: {payload.message}"}],
+    })
+
+    result = None
+    used_model = models_to_try[0]
+    last_error = "Gemini request failed"
+    last_status = "network"
+
+    for model in models_to_try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        try:
+            response = requests.post(
+                url,
+                params={"key": api_key},
+                json={
+                    "systemInstruction": {"parts": [{"text": AI_SYSTEM_INSTRUCTION.strip()}]},
+                    "contents": contents,
+                    "generationConfig": {
+                        "temperature": 0.35,
+                        "topP": 0.9,
+                        "maxOutputTokens": 800,
+                    },
+                },
+                timeout=25,
+            )
+            response.raise_for_status()
+            result = response.json()
+            used_model = model
+            break
+        except requests.RequestException as exc:
+            last_status = exc.response.status_code if exc.response is not None else "network"
+            last_error = "Gemini request failed"
+            try:
+                error_payload = exc.response.json() if exc.response is not None else {}
+                message = error_payload.get("error", {}).get("message")
+                if message:
+                    last_error = message
+            except ValueError:
+                pass
+
+            if last_status not in (404, 429):
+                break
+
+    if result is None:
+        if last_status == 429:
+            raise HTTPException(
+                status_code=429,
+                detail="Gemini quota is currently unavailable for this project. Check AI Studio quota/billing or try again later.",
+            )
+        raise HTTPException(status_code=502, detail=f"Gemini request failed ({last_status}): {last_error}")
+
+    parts = result.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+    answer = "\n".join(part.get("text", "") for part in parts if part.get("text")).strip()
+    if not answer:
+        raise HTTPException(status_code=502, detail="Gemini returned an empty answer")
+
+    return AIChatResponse(
+        answer=answer,
+        model=used_model,
+        generated_at=datetime.now(),
+        snapshot=snapshot or None,
+    )

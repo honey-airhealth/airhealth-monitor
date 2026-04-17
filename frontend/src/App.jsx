@@ -5,6 +5,7 @@ import { DataSources } from "./components/DataSources";
 import { ApiCapabilities } from "./components/ApiCapabilities";
 import ApiDashboardPage from "./components/ApiDashboardPage.jsx";
 import VisualizationPage from "./components/VisualizationPage.jsx";
+import AiChatPage from "./components/AiChatPage.jsx";
 import { Team } from "./components/Team";
 import { Footer } from "./components/Footer";
 import Dashboard from "./Dashboard.jsx";
@@ -33,6 +34,10 @@ export default function App() {
 
   if (pathname === "/suggestion" || pathname === "/api" || hash === "#/suggestion" || hash === "#/api") {
     return <ApiDashboardPage />;
+  }
+
+  if (pathname === "/ai" || hash === "#/ai") {
+    return <AiChatPage />;
   }
 
   if (pathname === "/statistic" || hash === "#/statistic") {
