@@ -12,7 +12,6 @@ const ALL_KEYWORDS = [
   { key: 'illness_index', label: 'Illness idx' },
   { key: 'headache',      label: 'Headache' },
   { key: 'cough',         label: 'Cough' },
-  { key: 'breathless',    label: 'Breathless' },
   { key: 'allergy',       label: 'Allergy' },
   { key: 'sore_throat',   label: 'Sore throat' },
   { key: 'chest_tight',   label: 'Chest tight' },

@@ -4,8 +4,7 @@ import Correlation from './api_dashboard/Correlation';
 import Discomfort from './api_dashboard/Discomfort';
 import WorstHours from './api_dashboard/WorstHours';
 import MainContributor from './api_dashboard/MainContributor';
-import History from './api_dashboard/History';
-import { CompareOfficial, Trend, Safety } from './api_dashboard/StatusPanels';
+import { CompareOfficial, Trend } from './api_dashboard/StatusPanels';
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext';
 import { Braces } from 'lucide-react';
 import DashboardHero from './DashboardHero.jsx';
@@ -32,10 +31,8 @@ const dashboardCards = [
   { id: 'discomfort', shortLabel: 'Q3', title: 'Discomfort index', description: 'Combined comfort pressure from heat, humidity, and PM2.5.', component: Discomfort },
   { id: 'worst-hours', shortLabel: 'Q4', title: 'Worst hours of day', description: 'Hours when air conditions are typically the most difficult.', component: WorstHours },
   { id: 'main-contributor', shortLabel: 'Q5', title: 'Main risk contributor', description: 'Factor contributing most to the total risk score.', component: MainContributor },
-  { id: 'history', shortLabel: 'Q6', title: 'Air quality history', description: 'Longer-range view of PM2.5 and weather-related readings.', component: History },
-  { id: 'compare-official', shortLabel: 'Q7', title: 'Local vs official PM2.5', description: 'Compare local sensor readings with official PM2.5 data.', component: CompareOfficial },
-  { id: 'trend', shortLabel: 'Q8', title: 'Trend direction', description: 'Check whether conditions are improving, flat, or worsening.', component: Trend },
-  { id: 'safety', shortLabel: 'Q9', title: 'Safety for daily activity', description: 'Practical guidance for day-to-day activity under current conditions.', component: Safety },
+  { id: 'compare-official', shortLabel: 'Q6', title: 'Local vs official PM2.5', description: 'Compare local sensor readings with official PM2.5 data.', component: CompareOfficial },
+  { id: 'trend', shortLabel: 'Q7', title: 'Trend direction', description: 'Check whether conditions are improving, flat, or worsening.', component: Trend },
 ];
 
 function DashboardSelector({ cards, activeId, onSelect }) {

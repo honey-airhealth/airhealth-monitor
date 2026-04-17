@@ -488,8 +488,8 @@ def q5_main_contributor(timestamp: Optional[datetime] = Query(None), conn=Depend
         total_risk=score)
 
 
-# Q6: History
-@router.get("/history", summary="Q6: Air quality over time?")
+# Visualization API 7: Air quality history — multi-metric time series.
+@router.get("/history", summary="V7: Air quality history — PM2.5, temperature, humidity and MQ9 over time")
 def q6_history(
     hours: int = Query(168, description="Past N hours (168=7days)"),
     interval: str = Query("hourly", description="hourly or daily"),
@@ -537,9 +537,9 @@ def q6_history(
     return {"interval": interval, "count": len(data), "data": data}
 
 
-# Q7: Local vs Official
+# Q6: Local vs Official
 @router.get("/compare-official", response_model=CompareOfficialResponse,
-            summary="Q7: Local sensor vs official PM2.5?")
+            summary="Q6: Local sensor vs official PM2.5?")
 def q7_compare_official(conn=Depends(get_db)):
     """How does the local sensor compare to official PM2.5 reports?"""
     sensor = _latest_combined(conn)
@@ -550,9 +550,9 @@ def q7_compare_official(conn=Depends(get_db)):
         official_pm25=official, difference=diff)
 
 
-# Q8: Trend
+# Q7: Trend
 @router.get("/trend", response_model=TrendResponse,
-            summary="Q8: Improving, stable, or worsening?")
+            summary="Q7: Improving, stable, or worsening?")
 def q8_trend(hours: int = Query(24), conn=Depends(get_db)):
     """How has air quality changed over time?"""
     cursor = conn.cursor(dictionary=True)
@@ -583,9 +583,9 @@ def q8_trend(hours: int = Query(24), conn=Depends(get_db)):
         summary=f"Air quality is {overall.value} over past {hours}h. PM2.5: {pt.value}, MQ9: {ct.value}.")
 
 
-# Q9: Safety
+# Q8: Safety
 @router.get("/safety", response_model=SafetyResponse,
-            summary="Q9: Safe for daily activity?")
+            summary="Q8: Safe for daily activity?")
 def q9_safety(timestamp: Optional[datetime] = Query(None), conn=Depends(get_db)):
     """Is the current environment safe for daily activity?"""
     sensor = _combined_at(conn, timestamp)
