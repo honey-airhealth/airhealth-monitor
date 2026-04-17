@@ -42,18 +42,18 @@ export function DataSources() {
 
       <div className="relative z-10 mx-auto max-w-[72rem]">
         <div className="mb-7 text-center md:mb-8">
-          <div className="mb-3 inline-flex items-center rounded-full border border-green-200/80 bg-white/88 px-4 py-2 shadow-[0_14px_30px_rgba(34,197,94,0.12)] backdrop-blur-md">
+          <div className="animate-fade-up mb-3 inline-flex items-center rounded-full border border-green-200/80 bg-white/88 px-4 py-2 shadow-[0_14px_30px_rgba(34,197,94,0.12)] backdrop-blur-md">
             <span className="text-[11px] font-semibold tracking-[0.24em] text-green-600 uppercase md:text-xs">
               DATA INTEGRATION
             </span>
           </div>
-          <h2 className="mb-2.5 text-[1.7rem] font-black leading-[1.08] tracking-[-0.045em] text-slate-900 md:text-[2.45rem]">
+          <h2 className="animate-fade-up mb-2.5 text-[1.7rem] font-black leading-[1.08] tracking-[-0.045em] text-slate-900 md:text-[2.45rem]" style={{ animationDelay: '0.08s' }}>
             External Data{' '}
             <span className="bg-[linear-gradient(90deg,#16a34a_0%,#0ea5e9_100%)] bg-clip-text text-transparent">
               Sources
             </span>
           </h2>
-          <p className="mx-auto max-w-3xl text-[13px] leading-6 text-slate-600 md:text-sm">
+          <p className="animate-fade-up mx-auto max-w-3xl text-[13px] leading-6 text-slate-600 md:text-sm" style={{ animationDelay: '0.14s' }}>
             Enriching local sensor readings with trusted public datasets for validation, context, and deeper insights.
           </p>
         </div>
@@ -69,7 +69,7 @@ export function DataSources() {
                 rel="noreferrer"
                 className="block"
               >
-                <Card className="group relative overflow-hidden border border-white/80 bg-white/92 shadow-[0_22px_58px_rgba(148,163,184,0.14)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_28px_74px_rgba(99,102,241,0.16)]">
+                <Card className="animate-fade-up group relative overflow-hidden border border-white/80 bg-white/92 shadow-[0_22px_58px_rgba(148,163,184,0.14)] transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_28px_74px_rgba(99,102,241,0.16)]" style={{ animationDelay: `${0.08 + index * 0.08}s` }}>
                   <div className={`relative h-24 overflow-hidden bg-gradient-to-br ${source.gradient} md:h-28`}>
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(0,0,0,0.08))]" />
                     <div className="absolute inset-0 flex items-center justify-center">
@@ -107,7 +107,7 @@ export function DataSources() {
         </div>
 
         <div className="text-center">
-          <Card className="relative inline-block max-w-4xl overflow-hidden border-0 bg-[linear-gradient(90deg,#06b6d4_0%,#2563eb_48%,#6366f1_100%)] p-4 shadow-[0_28px_72px_rgba(37,99,235,0.22)] md:p-5">
+          <Card className="animate-fade-up relative inline-block max-w-4xl overflow-hidden border-0 bg-[linear-gradient(90deg,#06b6d4_0%,#2563eb_48%,#6366f1_100%)] p-4 shadow-[0_28px_72px_rgba(37,99,235,0.22)] md:p-5" style={{ animationDelay: '0.26s' }}>
             <div className="absolute inset-0">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.2),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.08))]" />
               <div className="absolute top-0 right-0 size-32 rounded-full bg-white opacity-10"></div>

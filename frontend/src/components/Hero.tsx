@@ -1,5 +1,5 @@
-import { Wind, Activity, TrendingUp, Waves } from 'lucide-react';
-import { Button } from './ui/button';
+import { Wind, Waves } from 'lucide-react';
+import PageTabs from './PageTabs.jsx';
 
 const signalMetrics = [
   { label: 'Air Quality', value: 'AQI 42', detail: 'Low-risk urban zone' },
@@ -14,12 +14,8 @@ const featurePills = [
 ];
 
 export function Hero() {
-  const openApiDashboard = () => {
-    window.location.href = '/api';
-  };
-
   return (
-    <section className="relative flex min-h-screen items-center overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.2),_transparent_28%),radial-gradient(circle_at_85%_15%,_rgba(168,85,247,0.16),_transparent_26%),radial-gradient(circle_at_50%_85%,_rgba(34,211,238,0.08),_transparent_34%),linear-gradient(180deg,_#f7fbff_0%,_#eef6fb_48%,_#ffffff_100%)] px-4 py-8 md:px-6 md:py-10">
+    <section className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.2),_transparent_28%),radial-gradient(circle_at_85%_15%,_rgba(168,85,247,0.16),_transparent_26%),radial-gradient(circle_at_50%_85%,_rgba(34,211,238,0.08),_transparent_34%),linear-gradient(180deg,_#f7fbff_0%,_#eef6fb_48%,_#ffffff_100%)]">
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[linear-gradient(rgba(59,130,246,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(59,130,246,0.045)_1px,transparent_1px)] bg-[size:96px_96px] opacity-45" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0)_0%,rgba(255,255,255,0)_56%,rgba(255,255,255,0.72)_100%)]" />
@@ -33,20 +29,31 @@ export function Hero() {
         <div className="absolute left-1/2 top-1/2 h-[16rem] w-[16rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-200/26 opacity-55" />
       </div>
 
-      <div className="relative z-10 mx-auto grid max-w-[88rem] items-center gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.82fr)]">
-        <div className="animate-fade-in">
-          <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-white/88 px-4 py-2 text-[11px] font-medium tracking-[0.24em] text-sky-700 uppercase shadow-[0_14px_30px_rgba(125,211,252,0.16)] backdrop-blur-md">
+      <div className="relative z-10 mx-auto max-w-[1320px] px-4 py-4 sm:px-6 lg:px-6 lg:py-5">
+        <div className="mb-4 flex justify-end animate-fade-up">
+          <div className="flex min-w-[460px] flex-col items-end gap-3">
+            <PageTabs current="home" />
+            <div className="animate-fade-up rounded-full border border-sky-200/70 bg-white/58 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-sky-700/90 shadow-[0_14px_30px_rgba(125,211,252,0.12)] backdrop-blur-md" style={{ animationDelay: '0.1s' }}>
+              Air-aware health
+            </div>
+          </div>
+        </div>
+
+        <div className="flex min-h-[calc(100vh-7rem)] items-center">
+          <div className="grid w-full items-center gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.82fr)]">
+        <div className="animate-fade-right">
+          <div className="mb-4 inline-flex animate-fade-up items-center gap-3 rounded-full border border-sky-200/80 bg-white/88 px-4 py-2 text-[11px] font-medium tracking-[0.24em] text-sky-700 uppercase shadow-[0_14px_30px_rgba(125,211,252,0.16)] backdrop-blur-md" style={{ animationDelay: '0.08s' }}>
             <Waves className="size-4 text-sky-500" />
             Air-aware health intelligence
           </div>
 
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-[1.4rem] border border-sky-200/80 bg-gradient-to-br from-cyan-50 via-white to-blue-100 text-sky-600 shadow-[0_18px_40px_rgba(56,189,248,0.16)] md:size-14">
+            <div className="animate-drift flex size-12 items-center justify-center rounded-[1.4rem] border border-sky-200/80 bg-gradient-to-br from-cyan-50 via-white to-blue-100 text-sky-600 shadow-[0_18px_40px_rgba(56,189,248,0.16)] md:size-14">
               <Wind className="size-7 md:size-8" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-sky-700/75 md:text-sm">AirHealth</p>
-              <h1 className="text-[2.8rem] font-black leading-[0.86] tracking-[-0.07em] text-slate-900 md:text-[4.7rem] xl:text-[5.35rem]">
+              <p className="animate-fade-up text-xs font-semibold uppercase tracking-[0.35em] text-sky-700/75 md:text-sm" style={{ animationDelay: '0.12s' }}>AirHealth</p>
+              <h1 className="animate-fade-up text-[2.8rem] font-black leading-[0.86] tracking-[-0.07em] text-slate-900 md:text-[4.7rem] xl:text-[5.35rem]" style={{ animationDelay: '0.16s' }}>
                 Monitor
                 <span className="block bg-[linear-gradient(90deg,#15c9e8_0%,#1798eb_38%,#4f78ff_72%,#7c3aed_100%)] bg-clip-text text-transparent drop-shadow-[0_10px_35px_rgba(96,165,250,0.2)]">
                   the invisible.
@@ -55,7 +62,7 @@ export function Hero() {
             </div>
           </div>
 
-          <div className="mb-5 max-w-[42rem] animate-fade-in" style={{ animationDelay: '0.14s' }}>
+          <div className="mb-5 max-w-[42rem] animate-fade-up" style={{ animationDelay: '0.24s' }}>
             <p className="mb-3 max-w-[44rem] text-lg font-semibold leading-tight text-slate-900 md:text-[1.95rem] xl:text-[2.2rem]">
               Turning live environmental data into clear respiratory and public-health signals.
             </p>
@@ -65,47 +72,23 @@ export function Hero() {
             </p>
           </div>
 
-          <div className="mb-5 flex flex-wrap gap-2.5 animate-fade-in" style={{ animationDelay: '0.24s' }}>
-            {featurePills.map((pill) => (
+          <div className="mb-5 flex flex-wrap gap-2.5" style={{ animationDelay: '0.24s' }}>
+            {featurePills.map((pill, index) => (
               <span
                 key={pill}
-                className="rounded-full border border-slate-200 bg-white/90 px-3.5 py-1.5 text-[11px] font-medium text-slate-600 md:text-xs shadow-sm backdrop-blur-md"
+                className="animate-fade-up rounded-full border border-slate-200 bg-white/90 px-3.5 py-1.5 text-[11px] font-medium text-slate-600 md:text-xs shadow-sm backdrop-blur-md"
+                style={{ animationDelay: `${0.3 + index * 0.06}s` }}
               >
                 {pill}
               </span>
             ))}
           </div>
-
-          <div className="flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: '0.34s' }}>
-            <Button
-              size="lg"
-              onClick={() => {
-                window.location.href = "/dashboard";
-              }}
-              className="group h-14 min-w-[17rem] justify-start overflow-hidden rounded-[1.55rem] border-0 bg-[linear-gradient(90deg,#1dc7e8_0%,#19afe8_38%,#2393ee_70%,#3b82f6_100%)] px-5 text-[1.02rem] text-white shadow-[0_18px_50px_rgba(59,130,246,0.24)] hover:-translate-y-1 hover:shadow-[0_22px_60px_rgba(59,130,246,0.3)]"
-            >
-              <span className="flex size-9 items-center justify-center rounded-xl bg-white/12 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]">
-                <Activity className="size-5 transition-transform group-hover:scale-110" />
-              </span>
-              <span className="pr-2 font-semibold">View Live Dashboard</span>
-            </Button>
-            <Button
-              size="lg"
-              className="h-14 min-w-[16rem] justify-start rounded-[1.55rem] border border-slate-200 bg-white/90 px-5 text-[1.02rem] text-slate-700 shadow-sm backdrop-blur-xl hover:-translate-y-1 hover:bg-white"
-              onClick={openApiDashboard}
-            >
-              <span className="flex size-9 items-center justify-center rounded-xl bg-sky-50 ring-1 ring-sky-100">
-                <TrendingUp className="size-5 text-sky-600" />
-              </span>
-              <span className="pr-2 font-semibold">Explore Data Insights</span>
-            </Button>
-          </div>
         </div>
 
-        <div className="animate-fade-in" style={{ animationDelay: '0.18s' }}>
+        <div className="animate-fade-left" style={{ animationDelay: '0.16s' }}>
           <div className="relative overflow-hidden rounded-[1.85rem] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(246,251,255,0.98))] p-4 shadow-[0_35px_100px_rgba(148,163,184,0.24)] backdrop-blur-2xl">
             <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-sky-300 to-transparent" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(191,219,254,0.24),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(103,232,249,0.18),transparent_22%)]" />
+            <div className="animate-glow-pulse absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(191,219,254,0.24),transparent_26%),radial-gradient(circle_at_bottom_left,rgba(103,232,249,0.18),transparent_22%)]" />
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.28em] text-sky-700/60">Live overview</p>
@@ -131,10 +114,11 @@ export function Hero() {
             </div>
 
             <div className="relative space-y-2.5">
-              {signalMetrics.map((metric) => (
+              {signalMetrics.map((metric, index) => (
                 <div
                   key={metric.label}
-                  className="flex items-center justify-between rounded-[1.15rem] border border-slate-200/90 bg-white/88 px-4 py-3 shadow-[0_8px_24px_rgba(148,163,184,0.09)]"
+                  className="animate-fade-up flex items-center justify-between rounded-[1.15rem] border border-slate-200/90 bg-white/88 px-4 py-3 shadow-[0_8px_24px_rgba(148,163,184,0.09)]"
+                  style={{ animationDelay: `${0.34 + index * 0.08}s` }}
                 >
                   <div>
                     <p className="text-sm font-medium text-slate-800">{metric.label}</p>
@@ -158,6 +142,8 @@ export function Hero() {
               </div>
             </div>
           </div>
+        </div>
+        </div>
         </div>
       </div>
 

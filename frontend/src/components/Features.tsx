@@ -58,18 +58,18 @@ export function Features() {
 
       <div className="relative z-10 mx-auto max-w-[72rem]">
         <div className="mb-6 text-center md:mb-8">
-          <div className="mb-4 inline-flex items-center rounded-full border border-blue-200/80 bg-white/85 px-4 py-2 shadow-[0_14px_32px_rgba(96,165,250,0.14)] backdrop-blur-md">
+          <div className="animate-fade-up mb-4 inline-flex items-center rounded-full border border-blue-200/80 bg-white/85 px-4 py-2 shadow-[0_14px_32px_rgba(96,165,250,0.14)] backdrop-blur-md">
             <span className="text-[11px] font-semibold tracking-[0.24em] text-blue-600 uppercase md:text-xs">
               FEATURES
             </span>
           </div>
-          <h2 className="mb-3 text-[1.7rem] font-black leading-[1.04] tracking-[-0.045em] text-slate-900 md:text-[2.45rem]">
+          <h2 className="animate-fade-up mb-3 text-[1.7rem] font-black leading-[1.04] tracking-[-0.045em] text-slate-900 md:text-[2.45rem]" style={{ animationDelay: '0.08s' }}>
             Key Features &{' '}
             <span className="bg-[linear-gradient(90deg,#2563eb_0%,#4f46e5_48%,#9333ea_100%)] bg-clip-text text-transparent">
               Capabilities
             </span>
           </h2>
-          <p className="mx-auto max-w-3xl text-[13px] leading-6 text-slate-600 md:text-[0.96rem]">
+          <p className="animate-fade-up mx-auto max-w-3xl text-[13px] leading-6 text-slate-600 md:text-[0.96rem]" style={{ animationDelay: '0.14s' }}>
             Transform raw environmental data into actionable health insights with our comprehensive monitoring and analytics platform.
           </p>
         </div>
@@ -80,7 +80,8 @@ export function Features() {
             return (
               <Card
                 key={index}
-                className="group relative min-h-[216px] overflow-hidden border border-white/75 bg-white/82 p-4 shadow-[0_24px_60px_rgba(148,163,184,0.14)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_74px_rgba(96,165,250,0.16)]"
+                className="animate-fade-up group relative min-h-[216px] overflow-hidden border border-white/75 bg-white/82 p-4 shadow-[0_24px_60px_rgba(148,163,184,0.14)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_74px_rgba(96,165,250,0.16)]"
+                style={{ animationDelay: `${0.08 + index * 0.07}s` }}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.bgGradient} opacity-[0.18] transition-opacity duration-300 group-hover:opacity-[0.28]`} />
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-300/90 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />

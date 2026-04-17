@@ -57,18 +57,18 @@ export function Sensors() {
 
       <div className="relative z-10 mx-auto max-w-[68rem]">
         <div className="mb-8 text-center md:mb-9">
-          <div className="mb-3 inline-flex items-center rounded-full border border-purple-200/80 bg-white/88 px-4 py-2 shadow-[0_14px_30px_rgba(168,85,247,0.12)] backdrop-blur-md">
+          <div className="animate-fade-up mb-3 inline-flex items-center rounded-full border border-purple-200/80 bg-white/88 px-4 py-2 shadow-[0_14px_30px_rgba(168,85,247,0.12)] backdrop-blur-md">
             <span className="text-[11px] font-semibold tracking-[0.24em] text-purple-600 uppercase md:text-xs">
               HARDWARE
             </span>
           </div>
-          <h2 className="mb-2.5 text-[1.7rem] font-black leading-[1.08] tracking-[-0.045em] text-slate-900 md:text-[2.45rem]">
+          <h2 className="animate-fade-up mb-2.5 text-[1.7rem] font-black leading-[1.08] tracking-[-0.045em] text-slate-900 md:text-[2.45rem]" style={{ animationDelay: '0.08s' }}>
             Sensor{' '}
             <span className="bg-[linear-gradient(90deg,#7c3aed_0%,#a855f7_42%,#ec4899_100%)] bg-clip-text text-transparent">
               Technology
             </span>
           </h2>
-          <p className="mx-auto max-w-2xl text-[13px] leading-6 text-slate-600 md:text-sm">
+          <p className="animate-fade-up mx-auto max-w-2xl text-[13px] leading-6 text-slate-600 md:text-sm" style={{ animationDelay: '0.14s' }}>
             Real-time environmental data collected from multiple sensor modules for comprehensive air quality monitoring.
           </p>
         </div>
@@ -79,7 +79,8 @@ export function Sensors() {
             return (
               <Card
                 key={index}
-                className="group relative overflow-hidden border border-white/80 bg-white/88 p-4 shadow-[0_22px_58px_rgba(148,163,184,0.14)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_74px_rgba(99,102,241,0.16)] md:p-5"
+                className="animate-fade-up group relative overflow-hidden border border-white/80 bg-white/88 p-4 shadow-[0_22px_58px_rgba(148,163,184,0.14)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_74px_rgba(99,102,241,0.16)] md:p-5"
+                style={{ animationDelay: `${0.08 + index * 0.07}s` }}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${sensor.bgGradient} opacity-[0.28] transition-opacity duration-300 group-hover:opacity-[0.42]`} />
                 <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-80" />
@@ -110,7 +111,7 @@ export function Sensors() {
         </div>
 
         <div className="text-center">
-          <Card className="relative inline-block overflow-hidden border-0 bg-[linear-gradient(90deg,#4f46e5_0%,#7c3aed_36%,#c026d3_68%,#db2777_100%)] p-4 shadow-[0_28px_70px_rgba(124,58,237,0.26)] md:p-5">
+          <Card className="animate-fade-up relative inline-block overflow-hidden border-0 bg-[linear-gradient(90deg,#4f46e5_0%,#7c3aed_36%,#c026d3_68%,#db2777_100%)] p-4 shadow-[0_28px_70px_rgba(124,58,237,0.26)] md:p-5" style={{ animationDelay: '0.24s' }}>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.24),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.08))]" />
             <div className="relative z-10">
               <p className="mb-2 text-sm font-semibold text-white md:text-base">
