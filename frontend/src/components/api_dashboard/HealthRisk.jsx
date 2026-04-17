@@ -19,7 +19,7 @@ export default function HealthRisk() {
 
   return (
     <div>
-      <SectionTitle action={<button className="refresh-btn" onClick={refetch}>↺</button>}>
+      <SectionTitle action={<button type="button" className="refresh-btn" onClick={refetch}>↺</button>}>
         S1 · Current health risk
       </SectionTitle>
 

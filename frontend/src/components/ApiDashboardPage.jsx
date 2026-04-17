@@ -1,6 +1,7 @@
 import React from 'react';
 import HealthRisk from './api_dashboard/HealthRisk';
 import WorstHours from './api_dashboard/WorstHours';
+import WeeklySummary from './api_dashboard/WeeklySummary';
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext';
 import { Lightbulb } from 'lucide-react';
 import DashboardHero from './DashboardHero.jsx';
@@ -24,6 +25,7 @@ const pageStyle = {
 const dashboardCards = [
   { id: 'health-risk', shortLabel: 'S1', title: 'Current health risk', description: 'Latest score, level, and primary contributor from the current snapshot.', component: HealthRisk },
   { id: 'worst-hours', shortLabel: 'S2', title: 'Worst hours of day', description: 'Hours when air conditions are typically the most difficult.', component: WorstHours },
+  { id: 'weekly-summary', shortLabel: 'S3', title: 'Weekly summary', description: '7-day strip showing daily PM2.5 level and illness search volume.', component: WeeklySummary },
 ];
 
 function DashboardSelector({ cards, activeId, onSelect }) {

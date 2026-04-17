@@ -322,3 +322,15 @@ class StatisticGoogleTrendsResponse(BaseModel):
     count: int
     keywords: list[StatisticGoogleTrendKeyword]
     data: list[StatisticGoogleTrendPoint]
+
+
+class WeeklySummaryDay(BaseModel):
+    date: str
+    day_name: str
+    is_today: bool
+    pm25_avg: Optional[float] = None
+    searches: Optional[float] = None
+
+
+class WeeklySummaryResponse(BaseModel):
+    days: list[WeeklySummaryDay]

@@ -45,3 +45,4 @@ export const getCorrelationMatrix   = (days = 30, keywords = 'headache,cough,bre
 export const getSensorValidation    = (days = 14) => api.get('/visualization/sensor-validation', { params: { days } })
 export const getSensorDescriptive   = (hours = 168, interval = 'hourly') => api.get('/statistic/sensor-descriptive', { params: { hours, interval } })
 export const getGoogleTrendsKeywords = (days = 30) => api.get('/statistic/google-trends-keywords', { params: { days } })
+export const getWeeklySummary       = () => api.get('/weekly-summary')

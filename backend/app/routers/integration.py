@@ -40,6 +40,8 @@ from app.models import (
     SeedTestDataResponse,
     SensorValidationPoint,
     SensorValidationResponse,
+    WeeklySummaryDay,
+    WeeklySummaryResponse,
     StatisticSensorDescriptiveResponse,
     StatisticSensorMetricStats,
     StatisticGoogleTrendKeyword,
@@ -1407,3 +1409,67 @@ def statistic_3_google_trends_keywords(
         keywords=keywords,
         data=data,
     )
+
+
+# Suggestion S3: Weekly Summary Strip — last 7 days PM2.5 + illness search volume.
+@router.get(
+    "/weekly-summary",
+    response_model=WeeklySummaryResponse,
+    summary="S3: Weekly summary strip — 7-day PM2.5 and illness searches",
+)
+def s3_weekly_summary(conn=Depends(get_db)):
+    cursor = conn.cursor(dictionary=True)
+    today = datetime.now().date()
+    since = today - timedelta(days=6)
+
+    ILLNESS_COLS = [
+        "cough", "chest_tight", "wheeze", "allergy", "sore_throat",
+        "itchy_throat", "stuffy_nose", "runny_nose", "headache",
+        "dizziness", "nausea", "itchy_eyes",
+    ]
+
+    cursor.execute(
+        """
+        SELECT DATE(recorded_at) AS day_date, ROUND(AVG(pm2_5), 1) AS pm25_avg
+        FROM pms7003_readings
+        WHERE DATE(recorded_at) >= %s
+        GROUP BY DATE(recorded_at)
+        ORDER BY day_date
+        """,
+        (since,),
+    )
+    pm_by_day = {str(r["day_date"]): r["pm25_avg"] for r in cursor.fetchall()}
+
+    ill_cols_sql = ", ".join(f"ROUND(AVG({c}), 2) AS {c}" for c in ILLNESS_COLS)
+    cursor.execute(
+        f"""
+        SELECT DATE(timestamp) AS day_date, {ill_cols_sql}
+        FROM google_trends
+        WHERE DATE(timestamp) >= %s
+        GROUP BY DATE(timestamp)
+        ORDER BY day_date
+        """,
+        (since,),
+    )
+    trend_by_day = {str(r["day_date"]): r for r in cursor.fetchall()}
+    cursor.close()
+
+    day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    days_out = []
+    for i in range(7):
+        d = since + timedelta(days=i)
+        ds = str(d)
+        pm = _coerce_float(pm_by_day.get(ds))
+        trend = trend_by_day.get(ds, {})
+        ill_vals = [_coerce_float(trend.get(c)) for c in ILLNESS_COLS]
+        present = [v for v in ill_vals if v is not None]
+        searches = round(sum(present) / len(present), 1) if present else None
+        days_out.append(WeeklySummaryDay(
+            date=ds,
+            day_name=day_names[d.weekday()],
+            is_today=(d == today),
+            pm25_avg=pm,
+            searches=searches,
+        ))
+
+    return WeeklySummaryResponse(days=days_out)

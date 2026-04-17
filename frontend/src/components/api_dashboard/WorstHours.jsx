@@ -52,7 +52,7 @@ export default function WorstHours() {
             style={{ fontSize: 11, padding: '3px 6px', border: '0.5px solid var(--border)', borderRadius: 6, background: 'var(--bg)', color: 'var(--t1)' }}>
             {[3, 5, 7, 14].map(d => <option key={d} value={d}>{d}d avg</option>)}
           </select>
-          <button className="refresh-btn" onClick={refetch}>↺</button>
+          <button type="button" className="refresh-btn" onClick={refetch}>↺</button>
         </div>
       }>S2 · Worst hours of day</SectionTitle>
 
