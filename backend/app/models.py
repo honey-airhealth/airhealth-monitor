@@ -324,6 +324,24 @@ class StatisticGoogleTrendsResponse(BaseModel):
     data: list[StatisticGoogleTrendPoint]
 
 
+class WindSpeedPoint(BaseModel):
+    period: str
+    avg_wind: Optional[float] = None
+
+
+class WindSpeedResponse(BaseModel):
+    statistic: str
+    period_hours: int
+    interval: str
+    avg_wind: Optional[float] = None
+    max_wind: Optional[float] = None
+    min_wind: Optional[float] = None
+    count: int
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    data: list[WindSpeedPoint]
+
+
 class WeeklySummaryDay(BaseModel):
     date: str
     day_name: str

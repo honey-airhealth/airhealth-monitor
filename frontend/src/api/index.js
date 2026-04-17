@@ -46,3 +46,4 @@ export const getSensorValidation    = (days = 14) => api.get('/visualization/sen
 export const getSensorDescriptive   = (hours = 168, interval = 'hourly') => api.get('/statistic/sensor-descriptive', { params: { hours, interval } })
 export const getGoogleTrendsKeywords = (days = 30) => api.get('/statistic/google-trends-keywords', { params: { days } })
 export const getWeeklySummary       = () => api.get('/weekly-summary')
+export const getWindSpeed           = (hours = 168, interval = 'hourly') => api.get('/statistic/wind-speed', { params: { hours, interval } })

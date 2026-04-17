@@ -42,6 +42,8 @@ from app.models import (
     SensorValidationResponse,
     WeeklySummaryDay,
     WeeklySummaryResponse,
+    WindSpeedPoint,
+    WindSpeedResponse,
     StatisticSensorDescriptiveResponse,
     StatisticSensorMetricStats,
     StatisticGoogleTrendKeyword,
@@ -349,7 +351,7 @@ def seed_integration_test_data(
     )
 
 
-# S1: Current Health Risk Score
+# Suggestion S1: Current Health Risk Score
 @router.get("/health-risk", response_model=HealthRiskResponse,
             summary="Q1: What is the current health risk score right now?")
 def q1_health_risk(timestamp: Optional[datetime] = Query(None), conn=Depends(get_db)):
@@ -365,7 +367,7 @@ def q1_health_risk(timestamp: Optional[datetime] = Query(None), conn=Depends(get
         recommendation=rec, official_pm25=official)
 
 
-# S2: Worst Hours
+# Suggestion S2: Worst Hours
 @router.get("/worst-hours", response_model=list[WorstHoursResponse],
             summary="Q2: Worst hours of day?")
 def q2_worst_hours(days: int = Query(7, le=30), conn=Depends(get_db)):
@@ -397,6 +399,69 @@ def q2_worst_hours(days: int = Query(7, le=30), conn=Depends(get_db)):
         results.append(WorstHoursResponse(
             hour=h, avg_pm25=round(pm, 2), avg_co=round(mq, 2), risk_level=level))
     return results
+
+# Suggestion S3: Weekly Summary Strip — last 7 days PM2.5 + illness search volume.
+@router.get(
+    "/weekly-summary",
+    response_model=WeeklySummaryResponse,
+    summary="S3: Weekly summary strip — 7-day PM2.5 and illness searches",
+)
+def s3_weekly_summary(conn=Depends(get_db)):
+    cursor = conn.cursor(dictionary=True)
+    today = datetime.now().date()
+    since = today - timedelta(days=6)
+
+    ILLNESS_COLS = [
+        "cough", "chest_tight", "wheeze", "allergy", "sore_throat",
+        "itchy_throat", "stuffy_nose", "runny_nose", "headache",
+        "dizziness", "nausea", "itchy_eyes",
+    ]
+
+    cursor.execute(
+        """
+        SELECT DATE(recorded_at) AS day_date, ROUND(AVG(pm2_5), 1) AS pm25_avg
+        FROM pms7003_readings
+        WHERE DATE(recorded_at) >= %s
+        GROUP BY DATE(recorded_at)
+        ORDER BY day_date
+        """,
+        (since,),
+    )
+    pm_by_day = {str(r["day_date"]): r["pm25_avg"] for r in cursor.fetchall()}
+
+    ill_cols_sql = ", ".join(f"ROUND(AVG({c}), 2) AS {c}" for c in ILLNESS_COLS)
+    cursor.execute(
+        f"""
+        SELECT DATE(timestamp) AS day_date, {ill_cols_sql}
+        FROM google_trends
+        WHERE DATE(timestamp) >= %s
+        GROUP BY DATE(timestamp)
+        ORDER BY day_date
+        """,
+        (since,),
+    )
+    trend_by_day = {str(r["day_date"]): r for r in cursor.fetchall()}
+    cursor.close()
+
+    day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    days_out = []
+    for i in range(7):
+        d = since + timedelta(days=i)
+        ds = str(d)
+        pm = _coerce_float(pm_by_day.get(ds))
+        trend = trend_by_day.get(ds, {})
+        ill_vals = [_coerce_float(trend.get(c)) for c in ILLNESS_COLS]
+        present = [v for v in ill_vals if v is not None]
+        searches = round(sum(present) / len(present), 1) if present else None
+        days_out.append(WeeklySummaryDay(
+            date=ds,
+            day_name=day_names[d.weekday()],
+            is_today=(d == today),
+            pm25_avg=pm,
+            searches=searches,
+        ))
+
+    return WeeklySummaryResponse(days=days_out)
 
 
 
@@ -1411,65 +1476,68 @@ def statistic_3_google_trends_keywords(
     )
 
 
-# Suggestion S3: Weekly Summary Strip — last 7 days PM2.5 + illness search volume.
+# Statistic 4: Wind speed from Open-Meteo secondary data.
 @router.get(
-    "/weekly-summary",
-    response_model=WeeklySummaryResponse,
-    summary="S3: Weekly summary strip — 7-day PM2.5 and illness searches",
+    "/statistic/wind-speed",
+    response_model=WindSpeedResponse,
+    summary="Statistic 4: Wind speed statistics from Open-Meteo",
 )
-def s3_weekly_summary(conn=Depends(get_db)):
+def statistic_4_wind_speed(
+    hours: int = Query(168, ge=1, le=720, description="Past N hours"),
+    interval: str = Query("hourly", description="hourly or daily"),
+    conn=Depends(get_db),
+):
     cursor = conn.cursor(dictionary=True)
-    today = datetime.now().date()
-    since = today - timedelta(days=6)
+    since = datetime.now() - timedelta(hours=hours)
+    grp_fmt = "%Y-%m-%d" if interval == "daily" else "%Y-%m-%d %H:00:00"
 
-    ILLNESS_COLS = [
-        "cough", "chest_tight", "wheeze", "allergy", "sore_throat",
-        "itchy_throat", "stuffy_nose", "runny_nose", "headache",
-        "dizziness", "nausea", "itchy_eyes",
-    ]
+    cursor.execute(
+        f"""
+        SELECT
+            DATE_FORMAT(recorded_at, '{grp_fmt}') AS period,
+            ROUND(AVG(wind_speed_10m), 2)          AS avg_wind,
+            COUNT(*)                                AS cnt,
+            MIN(recorded_at)                        AS period_start,
+            MAX(recorded_at)                        AS period_end
+        FROM openmeteo_readings
+        WHERE recorded_at >= %s AND wind_speed_10m IS NOT NULL
+        GROUP BY period
+        ORDER BY period
+        """,
+        (since,),
+    )
+    rows = cursor.fetchall()
 
     cursor.execute(
         """
-        SELECT DATE(recorded_at) AS day_date, ROUND(AVG(pm2_5), 1) AS pm25_avg
-        FROM pms7003_readings
-        WHERE DATE(recorded_at) >= %s
-        GROUP BY DATE(recorded_at)
-        ORDER BY day_date
+        SELECT
+            ROUND(AVG(wind_speed_10m), 2) AS avg_wind,
+            ROUND(MAX(wind_speed_10m), 2) AS max_wind,
+            ROUND(MIN(wind_speed_10m), 2) AS min_wind,
+            COUNT(*)                       AS cnt,
+            MIN(recorded_at)               AS period_start,
+            MAX(recorded_at)               AS period_end
+        FROM openmeteo_readings
+        WHERE recorded_at >= %s AND wind_speed_10m IS NOT NULL
         """,
         (since,),
     )
-    pm_by_day = {str(r["day_date"]): r["pm25_avg"] for r in cursor.fetchall()}
-
-    ill_cols_sql = ", ".join(f"ROUND(AVG({c}), 2) AS {c}" for c in ILLNESS_COLS)
-    cursor.execute(
-        f"""
-        SELECT DATE(timestamp) AS day_date, {ill_cols_sql}
-        FROM google_trends
-        WHERE DATE(timestamp) >= %s
-        GROUP BY DATE(timestamp)
-        ORDER BY day_date
-        """,
-        (since,),
-    )
-    trend_by_day = {str(r["day_date"]): r for r in cursor.fetchall()}
+    summary = cursor.fetchone() or {}
     cursor.close()
 
-    day_names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    days_out = []
-    for i in range(7):
-        d = since + timedelta(days=i)
-        ds = str(d)
-        pm = _coerce_float(pm_by_day.get(ds))
-        trend = trend_by_day.get(ds, {})
-        ill_vals = [_coerce_float(trend.get(c)) for c in ILLNESS_COLS]
-        present = [v for v in ill_vals if v is not None]
-        searches = round(sum(present) / len(present), 1) if present else None
-        days_out.append(WeeklySummaryDay(
-            date=ds,
-            day_name=day_names[d.weekday()],
-            is_today=(d == today),
-            pm25_avg=pm,
-            searches=searches,
-        ))
+    data = [WindSpeedPoint(period=str(r["period"]), avg_wind=_coerce_float(r["avg_wind"])) for r in rows]
 
-    return WeeklySummaryResponse(days=days_out)
+    return WindSpeedResponse(
+        statistic="wind-speed",
+        period_hours=hours,
+        interval=interval,
+        avg_wind=_coerce_float(summary.get("avg_wind")),
+        max_wind=_coerce_float(summary.get("max_wind")),
+        min_wind=_coerce_float(summary.get("min_wind")),
+        count=int(summary.get("cnt") or 0),
+        period_start=str(summary["period_start"]) if summary.get("period_start") else None,
+        period_end=str(summary["period_end"]) if summary.get("period_end") else None,
+        data=data,
+    )
+
+

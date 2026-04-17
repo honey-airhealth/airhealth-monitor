@@ -10,6 +10,7 @@ import SensorValidation from './visualization/SensorValidation.jsx'
 import AirQualityHistory from './visualization/AirQualityHistory.jsx'
 import SensorDataDescriptive from './visualization/SensorDataDescriptive.jsx'
 import GoogleTrendsKeywords from './visualization/GoogleTrendsKeywords.jsx'
+import WindSpeed from './visualization/WindSpeed.jsx'
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext.jsx'
 
 const pageStyle = {
@@ -97,6 +98,14 @@ const statisticCards = [
     title: 'Google Trends keywords',
     description: 'Bar chart showing average Google Trends search term frequency over 3 days, 1 week or 2 weeks.',
     component: GoogleTrendsKeywords,
+  },
+  {
+    id: 'wind-speed',
+    // Statistic 4 shows wind speed statistics from Open-Meteo secondary data.
+    shortLabel: 'Static 4',
+    title: 'Wind speed',
+    description: 'Wind speed at 10 m from Open-Meteo — average, max, min and hourly/daily time series.',
+    component: WindSpeed,
   },
 ]
 
