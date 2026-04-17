@@ -137,10 +137,29 @@ const pageCopy = {
 export default function VisualizationPage({ variant = 'analytic' }) {
   const copy = pageCopy[variant] || pageCopy.analytic
   const cards = copy.cards
-  const [activeId, setActiveId] = React.useState(cards[0].id)
+  const getInitialActiveId = React.useCallback(() => {
+    if (typeof window === 'undefined') return cards[0].id
+    const view = new URLSearchParams(window.location.search).get('view')
+    return cards.some((card) => card.id === view) ? view : cards[0].id
+  }, [cards])
+
+  const [activeId, setActiveId] = React.useState(getInitialActiveId)
 
   React.useEffect(() => {
-    setActiveId(cards[0].id)
+    setActiveId(getInitialActiveId())
+  }, [getInitialActiveId])
+
+  const handleSelectCard = React.useCallback((id) => {
+    setActiveId(id)
+    if (typeof window === 'undefined') return
+
+    const url = new URL(window.location.href)
+    if (id === cards[0].id) {
+      url.searchParams.delete('view')
+    } else {
+      url.searchParams.set('view', id)
+    }
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
   }, [cards])
 
   const activeCard = cards.find((card) => card.id === activeId) || cards[0]
@@ -342,7 +361,7 @@ export default function VisualizationPage({ variant = 'analytic' }) {
           </div>
 
           <div className="visualization-shell">
-            <VisualizationSelector cards={cards} activeId={activeId} onSelect={setActiveId} />
+            <VisualizationSelector cards={cards} activeId={activeId} onSelect={handleSelectCard} />
 
             <section className="visualization-panel">
               <div className="visualization-panel__hero">

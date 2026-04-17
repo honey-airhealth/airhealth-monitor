@@ -29,8 +29,8 @@ export function Hero() {
         <div className="absolute left-1/2 top-1/2 h-[16rem] w-[16rem] -translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-200/26 opacity-55" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-[1320px] px-4 py-4 sm:px-6 lg:px-6 lg:py-5">
-        <div className="mb-4 flex justify-end animate-fade-up">
+      <div className="relative z-10 mx-auto max-w-[1320px] px-4 pb-4 pt-9 sm:px-6 sm:pt-10 lg:px-6 lg:pb-5 lg:pt-12">
+        <div className="mb-3 flex justify-end animate-fade-up">
           <div className="flex min-w-[460px] flex-col items-end gap-3">
             <PageTabs current="home" />
             <div className="animate-fade-up rounded-full border border-sky-200/70 bg-white/58 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-sky-700/90 shadow-[0_14px_30px_rgba(125,211,252,0.12)] backdrop-blur-md" style={{ animationDelay: '0.1s' }}>
@@ -39,7 +39,7 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="flex min-h-[calc(100vh-7rem)] items-center">
+        <div className="flex items-start pt-2 pb-8 lg:pt-3">
           <div className="grid w-full items-center gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.82fr)]">
         <div className="animate-fade-right">
           <div className="mb-4 inline-flex animate-fade-up items-center gap-3 rounded-full border border-sky-200/80 bg-white/88 px-4 py-2 text-[11px] font-medium tracking-[0.24em] text-sky-700 uppercase shadow-[0_14px_30px_rgba(125,211,252,0.16)] backdrop-blur-md" style={{ animationDelay: '0.08s' }}>
