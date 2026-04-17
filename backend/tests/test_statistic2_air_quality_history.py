@@ -1,4 +1,4 @@
-"""Statistic 1 — Air quality history line chart (5 test cases)."""
+"""Statistic 2 — Air quality history line chart (5 test cases)."""
 import pytest
 from tests.conftest import client, override_db, make_conn  # noqa: F401
 
@@ -14,37 +14,37 @@ def _setup(client):
     return client
 
 
-# TC-STATISTIC1-01: Default params -> 200
-def test_statistic1_default(client):
+# TC-STATISTIC2-01: Default params -> 200
+def test_statistic2_default(client):
     _setup(client)
     r = client.get(BASE)
     assert r.status_code == 200
 
 
-# TC-STATISTIC1-02: Response has interval, count, data fields
-def test_statistic1_schema(client):
+# TC-STATISTIC2-02: Response has interval, count, data fields
+def test_statistic2_schema(client):
     _setup(client)
     body = client.get(BASE).json()
     for f in ("interval", "count", "data"):
         assert f in body, f"missing: {f}"
 
 
-# TC-STATISTIC1-03: interval=daily echoed back
-def test_statistic1_daily_interval(client):
+# TC-STATISTIC2-03: interval=daily echoed back
+def test_statistic2_daily_interval(client):
     _setup(client)
     body = client.get(BASE, params={"interval": "daily"}).json()
     assert body["interval"] == "daily"
 
 
-# TC-STATISTIC1-04: count matches length of data array
-def test_statistic1_count_matches_data(client):
+# TC-STATISTIC2-04: count matches length of data array
+def test_statistic2_count_matches_data(client):
     _setup(client)
     body = client.get(BASE).json()
     assert body["count"] == len(body["data"])
 
 
-# TC-STATISTIC1-05: Each data point has period field
-def test_statistic1_data_has_period(client):
+# TC-STATISTIC2-05: Each data point has period field
+def test_statistic2_data_has_period(client):
     _setup(client)
     body = client.get(BASE).json()
     assert len(body["data"]) > 0

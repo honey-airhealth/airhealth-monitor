@@ -8,6 +8,7 @@ import MultiPollutantRadar from './visualization/MultiPollutantRadar.jsx'
 import TimeSeriesPollution from './visualization/TimeSeriesPollution.jsx'
 import SensorValidation from './visualization/SensorValidation.jsx'
 import AirQualityHistory from './visualization/AirQualityHistory.jsx'
+import SensorDataDescriptive from './visualization/SensorDataDescriptive.jsx'
 import GoogleTrendsKeywords from './visualization/GoogleTrendsKeywords.jsx'
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext.jsx'
 
@@ -74,17 +75,25 @@ const analyticCards = [
 
 const statisticCards = [
   {
-    id: 'air-quality-history',
-    // Moved from V7 into the Statistic tab and renamed for the requested static grouping.
+    id: 'sensor-data-descriptive',
+    // Statistic 1 shows descriptive statistics for all sensor data in the selected range.
     shortLabel: 'Static 1',
+    title: 'Sensor data descriptive',
+    description: 'Average, SD, Max and Min for PM2.5, temperature, humidity and MQ9 raw.',
+    component: SensorDataDescriptive,
+  },
+  {
+    id: 'air-quality-history',
+    // Statistic 2 shows air-quality history as a line chart.
+    shortLabel: 'Static 2',
     title: 'Air quality history',
     description: 'Line chart showing longer-range PM2.5, temperature, humidity and MQ9 raw — switch between hourly and daily resolution.',
     component: AirQualityHistory,
   },
   {
     id: 'google-trends-keywords',
-    // Statistic 2 shows Google Trends keyword search terms as a range-selectable bar chart.
-    shortLabel: 'Static 2',
+    // Statistic 3 shows Google Trends keyword search terms as a range-selectable bar chart.
+    shortLabel: 'Static 3',
     title: 'Google Trends keywords',
     description: 'Bar chart showing average Google Trends search term frequency over 3 days, 1 week or 2 weeks.',
     component: GoogleTrendsKeywords,

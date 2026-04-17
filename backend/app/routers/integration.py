@@ -44,6 +44,8 @@ from app.models import (
     SeedTestDataResponse,
     SensorValidationPoint,
     SensorValidationResponse,
+    StatisticSensorDescriptiveResponse,
+    StatisticSensorMetricStats,
     StatisticGoogleTrendKeyword,
     StatisticGoogleTrendPoint,
     StatisticGoogleTrendsResponse,
@@ -1378,15 +1380,82 @@ def v6_sensor_validation(
     )
 
 
-# Statistic 1: Air quality history line chart — multi-metric time series.
-# Kept at /history because the statistic frontend tab already calls this endpoint.
-@router.get("/history", summary="Statistic 1: Air quality history line chart — PM2.5, temperature, humidity and MQ9 over time")
-def statistic_1_history(
+# Statistic 1: Sensor data descriptive statistics.
+@router.get(
+    "/statistic/sensor-descriptive",
+    response_model=StatisticSensorDescriptiveResponse,
+    summary="Statistic 1: Sensor data descriptive statistics — Average, SD, Max and Min",
+)
+def statistic_1_sensor_descriptive(
+    hours: int = Query(168, description="Past N hours (168=7days)"),
+    interval: str = Query("hourly", description="Fixed display interval label for the statistic card"),
+    conn=Depends(get_db),
+):
+    """Statistic 1: descriptive statistics for sensor readings in the selected time range."""
+    cursor = conn.cursor(dictionary=True)
+    since = datetime.now() - timedelta(hours=hours)
+
+    metric_queries = [
+        ("pm25", "PM2.5", "µg/m³", "pms7003_readings", "pm2_5", "recorded_at"),
+        ("temp", "Temp", "°C", "ky015_readings", "temperature", "recorded_at"),
+        ("hum", "Humidity", "%", "ky015_readings", "humidity", "recorded_at"),
+        ("co", "MQ9 raw", "", "mq9_readings", "mq9_raw", "recorded_at"),
+    ]
+
+    metrics = []
+    period_start = None
+    period_end = None
+    for key, label, unit, table, column, time_col in metric_queries:
+        cursor.execute(
+            f"""
+            SELECT
+                COUNT({column}) AS count,
+                ROUND(AVG({column}), 2) AS average,
+                ROUND(STDDEV_SAMP({column}), 2) AS sd,
+                ROUND(MAX({column}), 2) AS max,
+                ROUND(MIN({column}), 2) AS min,
+                MIN({time_col}) AS period_start,
+                MAX({time_col}) AS period_end
+            FROM {table}
+            WHERE {time_col} >= %s
+            """,
+            (since,),
+        )
+        row = cursor.fetchone() or {}
+        if row.get("period_start") and (period_start is None or row["period_start"] < period_start):
+            period_start = row["period_start"]
+        if row.get("period_end") and (period_end is None or row["period_end"] > period_end):
+            period_end = row["period_end"]
+        metrics.append(StatisticSensorMetricStats(
+            key=key,
+            label=label,
+            unit=unit,
+            count=int(row.get("count") or 0),
+            average=_coerce_float(row.get("average")),
+            sd=_coerce_float(row.get("sd")),
+            max=_coerce_float(row.get("max")),
+            min=_coerce_float(row.get("min")),
+        ))
+
+    cursor.close()
+    return StatisticSensorDescriptiveResponse(
+        statistic="sensor-data-descriptive",
+        period_hours=hours,
+        interval=interval,
+        period_start=str(period_start) if period_start else None,
+        period_end=str(period_end) if period_end else None,
+        metrics=metrics,
+    )
+
+
+# Statistic 2: Air quality history line chart — multi-metric time series.
+@router.get("/history", summary="Statistic 2: Air quality history line chart — PM2.5, temperature, humidity and MQ9 over time")
+def statistic_2_history(
     hours: int = Query(168, description="Past N hours (168=7days)"),
     interval: str = Query("hourly", description="hourly or daily"),
     conn=Depends(get_db),
 ):
-    """Statistic 1: line chart data for air quality changes over time."""
+    """Statistic 2: line chart data for air quality changes over time."""
     cursor = conn.cursor(dictionary=True)
     since = datetime.now() - timedelta(hours=hours)
     grp_fmt = "%Y-%m-%d" if interval == "daily" else "%Y-%m-%d %H:00:00"
@@ -1428,18 +1497,18 @@ def statistic_1_history(
     return {"interval": interval, "count": len(data), "data": data}
 
 
-# Statistic 2: Google Trends keyword search trends by date.
+# Statistic 3: Google Trends keyword search trends by date.
 # Shows Google search terms as daily time-series points for the statistic tab.
 @router.get(
     "/statistic/google-trends-keywords",
     response_model=StatisticGoogleTrendsResponse,
-    summary="Statistic 2: Google Trends keyword search terms by date",
+    summary="Statistic 3: Google Trends keyword search terms by date",
 )
-def statistic_2_google_trends_keywords(
+def statistic_3_google_trends_keywords(
     days: int = Query(30, ge=1, le=365, description="Past N days of Google Trends data"),
     conn=Depends(get_db),
 ):
-    """Statistic 2: Google Trends search keyword time series by date."""
+    """Statistic 3: Google Trends search keyword time series by date."""
     cursor = conn.cursor(dictionary=True)
     since = datetime.now() - timedelta(days=days)
 

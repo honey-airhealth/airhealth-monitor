@@ -1,4 +1,4 @@
-"""Statistic 2 — Google Trends keyword search terms by date (5 test cases)."""
+"""Statistic 3 — Google Trends keyword search terms by date (5 test cases)."""
 from datetime import date
 
 import pytest
@@ -70,23 +70,23 @@ def _setup(client):
     return client
 
 
-# TC-STATISTIC2-01: Default params -> 200
-def test_statistic2_default(client):
+# TC-STATISTIC3-01: Default params -> 200
+def test_statistic3_default(client):
     _setup(client)
     r = client.get(BASE)
     assert r.status_code == 200
 
 
-# TC-STATISTIC2-02: Response has statistic, period, count, keywords and data fields
-def test_statistic2_schema(client):
+# TC-STATISTIC3-02: Response has statistic, period, count, keywords and data fields
+def test_statistic3_schema(client):
     _setup(client)
     body = client.get(BASE).json()
     for f in ("statistic", "period_days", "sample_count", "count", "keywords", "data"):
         assert f in body, f"missing: {f}"
 
 
-# TC-STATISTIC2-03: Data is grouped by date
-def test_statistic2_data_is_by_date(client):
+# TC-STATISTIC3-03: Data is grouped by date
+def test_statistic3_data_is_by_date(client):
     _setup(client)
     body = client.get(BASE).json()
     assert body["data"][0]["period"] == "2026-04-16"
@@ -94,15 +94,15 @@ def test_statistic2_data_is_by_date(client):
     assert body["data"][2]["period"] == "2026-04-18"
 
 
-# TC-STATISTIC2-04: Count matches number of date points
-def test_statistic2_count_matches_date_points(client):
+# TC-STATISTIC3-04: Count matches number of date points
+def test_statistic3_count_matches_date_points(client):
     _setup(client)
     body = client.get(BASE).json()
     assert body["count"] == len(body["data"]) == 3
 
 
-# TC-STATISTIC2-05: Keyword summary still ranks by average search
-def test_statistic2_keywords_ranked_by_average(client):
+# TC-STATISTIC3-05: Keyword summary still ranks by average search
+def test_statistic3_keywords_ranked_by_average(client):
     _setup(client)
     keywords = client.get(BASE).json()["keywords"]
     avg_values = [k["avg_search"] for k in keywords if k["avg_search"] is not None]

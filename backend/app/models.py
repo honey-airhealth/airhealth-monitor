@@ -309,6 +309,26 @@ class SensorValidationResponse(BaseModel):
     data: list[SensorValidationPoint]
 
 
+class StatisticSensorMetricStats(BaseModel):
+    key: str
+    label: str
+    unit: str
+    count: int
+    average: Optional[float] = None
+    sd: Optional[float] = None
+    max: Optional[float] = None
+    min: Optional[float] = None
+
+
+class StatisticSensorDescriptiveResponse(BaseModel):
+    statistic: str
+    period_hours: int
+    interval: str
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    metrics: list[StatisticSensorMetricStats]
+
+
 class StatisticGoogleTrendKeyword(BaseModel):
     key: str
     label: str
