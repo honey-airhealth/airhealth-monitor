@@ -1,9 +1,9 @@
 const tabs = [
   { href: "/", label: "Home", key: "home", widthClass: "w-[92px]" },
   { href: "/dashboard", label: "Live", key: "dashboard", widthClass: "w-[92px]" },
-  { href: "/suggestion", label: "suggestion", key: "suggestion", widthClass: "w-[126px]" },
   { href: "/statistic", label: "statistic", key: "statistic", widthClass: "w-[112px]" },
   { href: "/visualization", label: "analytic", key: "analytic", widthClass: "w-[112px]" },
+  { href: "/suggestion", label: "suggestion", key: "suggestion", widthClass: "w-[126px]" },
 ];
 
 export default function PageTabs({ current }) {

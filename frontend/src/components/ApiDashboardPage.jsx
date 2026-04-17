@@ -22,8 +22,8 @@ const pageStyle = {
 };
 
 const dashboardCards = [
-  { id: 'health-risk', shortLabel: 'Q1', title: 'Current health risk', description: 'Latest score, level, and primary contributor from the current snapshot.', component: HealthRisk },
-  { id: 'worst-hours', shortLabel: 'Q2', title: 'Worst hours of day', description: 'Hours when air conditions are typically the most difficult.', component: WorstHours },
+  { id: 'health-risk', shortLabel: 'S1', title: 'Current health risk', description: 'Latest score, level, and primary contributor from the current snapshot.', component: HealthRisk },
+  { id: 'worst-hours', shortLabel: 'S2', title: 'Worst hours of day', description: 'Hours when air conditions are typically the most difficult.', component: WorstHours },
 ];
 
 function DashboardSelector({ cards, activeId, onSelect }) {
@@ -40,6 +40,7 @@ function DashboardSelector({ cards, activeId, onSelect }) {
           >
             <span className="api-dashboard-selector__kicker">{card.shortLabel}</span>
             <span className="api-dashboard-selector__label">{card.title}</span>
+            <span className="api-dashboard-selector__desc">{card.description}</span>
           </button>
         );
       })}
@@ -137,6 +138,18 @@ export default function ApiDashboardPage() {
           line-height: 1.28;
           font-weight: 800;
           letter-spacing: -0.02em;
+        }
+
+        .api-dashboard-selector__desc {
+          font-size: 10px;
+          line-height: 1.4;
+          font-weight: 400;
+          color: #8fa8bc;
+          margin-top: 1px;
+        }
+
+        .api-dashboard-selector__item.is-active .api-dashboard-selector__desc {
+          color: #6b8da6;
         }
 
         .api-dashboard-panel {

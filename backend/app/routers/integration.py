@@ -347,7 +347,7 @@ def seed_integration_test_data(
     )
 
 
-# Q1: Current Health Risk Score
+# S1: Current Health Risk Score
 @router.get("/health-risk", response_model=HealthRiskResponse,
             summary="Q1: What is the current health risk score right now?")
 def q1_health_risk(timestamp: Optional[datetime] = Query(None), conn=Depends(get_db)):
@@ -361,6 +361,41 @@ def q1_health_risk(timestamp: Optional[datetime] = Query(None), conn=Depends(get
         timestamp=sensor["recorded_at"], risk_score=score, risk_level=level,
         main_contributor=main, contributions=contribs,
         recommendation=rec, official_pm25=official)
+
+
+# S2: Worst Hours
+@router.get("/worst-hours", response_model=list[WorstHoursResponse],
+            summary="Q2: Worst hours of day?")
+def q2_worst_hours(days: int = Query(7, le=30), conn=Depends(get_db)):
+    """What are the worst hours of the day for air quality?"""
+    cursor = conn.cursor(dictionary=True)
+    since = datetime.now() - timedelta(days=days)
+
+    cursor.execute(
+        """SELECT HOUR(recorded_at) as hour, AVG(pm2_5) as avg_pm25
+           FROM pms7003_readings WHERE recorded_at >= %s
+           GROUP BY HOUR(recorded_at)""", (since,))
+    pm_by_hour = {r["hour"]: float(r["avg_pm25"]) for r in cursor.fetchall()}
+
+    cursor.execute(
+        """SELECT HOUR(recorded_at) as hour, AVG(mq9_raw) as avg_mq9
+           FROM mq9_readings WHERE recorded_at >= %s
+           GROUP BY HOUR(recorded_at)""", (since,))
+    mq_by_hour = {r["hour"]: float(r["avg_mq9"]) for r in cursor.fetchall()}
+    cursor.close()
+
+    results = []
+    for h in sorted(set(pm_by_hour) | set(mq_by_hour)):
+        pm = pm_by_hour.get(h, 0)
+        mq = mq_by_hour.get(h, 0)
+        combined = pm / 37.5 * 50 + mq / 500 * 50
+        level = (RiskLevel.safe if combined <= 30
+                 else RiskLevel.moderate if combined <= 60
+                 else RiskLevel.unhealthy)
+        results.append(WorstHoursResponse(
+            hour=h, avg_pm25=round(pm, 2), avg_co=round(mq, 2), risk_level=level))
+    return results
+
 
 
 # Visualization API 1: Time-series chart for PM2.5 or CO vs Google Trends sickness keywords over weeks.
@@ -1372,37 +1407,3 @@ def statistic_3_google_trends_keywords(
         keywords=keywords,
         data=data,
     )
-
-
-# Q2: Worst Hours
-@router.get("/worst-hours", response_model=list[WorstHoursResponse],
-            summary="Q2: Worst hours of day?")
-def q2_worst_hours(days: int = Query(7, le=30), conn=Depends(get_db)):
-    """What are the worst hours of the day for air quality?"""
-    cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(days=days)
-
-    cursor.execute(
-        """SELECT HOUR(recorded_at) as hour, AVG(pm2_5) as avg_pm25
-           FROM pms7003_readings WHERE recorded_at >= %s
-           GROUP BY HOUR(recorded_at)""", (since,))
-    pm_by_hour = {r["hour"]: float(r["avg_pm25"]) for r in cursor.fetchall()}
-
-    cursor.execute(
-        """SELECT HOUR(recorded_at) as hour, AVG(mq9_raw) as avg_mq9
-           FROM mq9_readings WHERE recorded_at >= %s
-           GROUP BY HOUR(recorded_at)""", (since,))
-    mq_by_hour = {r["hour"]: float(r["avg_mq9"]) for r in cursor.fetchall()}
-    cursor.close()
-
-    results = []
-    for h in sorted(set(pm_by_hour) | set(mq_by_hour)):
-        pm = pm_by_hour.get(h, 0)
-        mq = mq_by_hour.get(h, 0)
-        combined = pm / 37.5 * 50 + mq / 500 * 50
-        level = (RiskLevel.safe if combined <= 30
-                 else RiskLevel.moderate if combined <= 60
-                 else RiskLevel.unhealthy)
-        results.append(WorstHoursResponse(
-            hour=h, avg_pm25=round(pm, 2), avg_co=round(mq, 2), risk_level=level))
-    return results
