@@ -488,55 +488,6 @@ def q5_main_contributor(timestamp: Optional[datetime] = Query(None), conn=Depend
         total_risk=score)
 
 
-# Visualization API 7: Air quality history — multi-metric time series.
-@router.get("/history", summary="V7: Air quality history — PM2.5, temperature, humidity and MQ9 over time")
-def q6_history(
-    hours: int = Query(168, description="Past N hours (168=7days)"),
-    interval: str = Query("hourly", description="hourly or daily"),
-    conn=Depends(get_db),
-):
-    """How has air quality changed over time?"""
-    cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(hours=hours)
-    grp_fmt = "%Y-%m-%d" if interval == "daily" else "%Y-%m-%d %H:00:00"
-
-    cursor.execute(f"""
-        SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
-               ROUND(AVG(pm2_5), 2) as avg_pm25
-        FROM pms7003_readings WHERE recorded_at >= %s
-        GROUP BY period ORDER BY period""", (since,))
-    pm_data = {r["period"]: r["avg_pm25"] for r in cursor.fetchall()}
-
-    cursor.execute(f"""
-        SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
-               ROUND(AVG(temperature), 1) as avg_temperature,
-               ROUND(AVG(humidity), 1) as avg_humidity
-        FROM ky015_readings WHERE recorded_at >= %s
-        GROUP BY period ORDER BY period""", (since,))
-    ky_data = {r["period"]: r for r in cursor.fetchall()}
-
-    cursor.execute(f"""
-        SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
-               ROUND(AVG(mq9_raw), 2) as avg_mq9
-        FROM mq9_readings WHERE recorded_at >= %s
-        GROUP BY period ORDER BY period""", (since,))
-    mq_data = {r["period"]: r["avg_mq9"] for r in cursor.fetchall()}
-    cursor.close()
-
-    all_periods = sorted(set(pm_data) | set(ky_data) | set(mq_data))
-    data = []
-    for p in all_periods:
-        ky = ky_data.get(p, {})
-        data.append({
-            "period": p,
-            "avg_pm25": pm_data.get(p),
-            "avg_mq9_raw": mq_data.get(p),
-            "avg_temperature": ky.get("avg_temperature"),
-            "avg_humidity": ky.get("avg_humidity"),
-        })
-    return {"interval": interval, "count": len(data), "data": data}
-
-
 # Q6: Local vs Official
 @router.get("/compare-official", response_model=CompareOfficialResponse,
             summary="Q6: Local sensor vs official PM2.5?")
@@ -1405,3 +1356,53 @@ def v6_sensor_validation(
         n_overlap=len(pairs),
         data=data,
     )
+
+
+# Statistic 1: Air quality history line chart — multi-metric time series.
+# Kept at /history because the statistic frontend tab already calls this endpoint.
+@router.get("/history", summary="Statistic 1: Air quality history line chart — PM2.5, temperature, humidity and MQ9 over time")
+def statistic_1_history(
+    hours: int = Query(168, description="Past N hours (168=7days)"),
+    interval: str = Query("hourly", description="hourly or daily"),
+    conn=Depends(get_db),
+):
+    """Statistic 1: line chart data for air quality changes over time."""
+    cursor = conn.cursor(dictionary=True)
+    since = datetime.now() - timedelta(hours=hours)
+    grp_fmt = "%Y-%m-%d" if interval == "daily" else "%Y-%m-%d %H:00:00"
+
+    cursor.execute(f"""
+        SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
+               ROUND(AVG(pm2_5), 2) as avg_pm25
+        FROM pms7003_readings WHERE recorded_at >= %s
+        GROUP BY period ORDER BY period""", (since,))
+    pm_data = {r["period"]: r["avg_pm25"] for r in cursor.fetchall()}
+
+    cursor.execute(f"""
+        SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
+               ROUND(AVG(temperature), 1) as avg_temperature,
+               ROUND(AVG(humidity), 1) as avg_humidity
+        FROM ky015_readings WHERE recorded_at >= %s
+        GROUP BY period ORDER BY period""", (since,))
+    ky_data = {r["period"]: r for r in cursor.fetchall()}
+
+    cursor.execute(f"""
+        SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
+               ROUND(AVG(mq9_raw), 2) as avg_mq9
+        FROM mq9_readings WHERE recorded_at >= %s
+        GROUP BY period ORDER BY period""", (since,))
+    mq_data = {r["period"]: r["avg_mq9"] for r in cursor.fetchall()}
+    cursor.close()
+
+    all_periods = sorted(set(pm_data) | set(ky_data) | set(mq_data))
+    data = []
+    for p in all_periods:
+        ky = ky_data.get(p, {})
+        data.append({
+            "period": p,
+            "avg_pm25": pm_data.get(p),
+            "avg_mq9_raw": mq_data.get(p),
+            "avg_temperature": ky.get("avg_temperature"),
+            "avg_humidity": ky.get("avg_humidity"),
+        })
+    return {"interval": interval, "count": len(data), "data": data}

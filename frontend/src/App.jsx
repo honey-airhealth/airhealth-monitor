@@ -35,8 +35,12 @@ export default function App() {
     return <ApiDashboardPage />;
   }
 
+  if (pathname === "/statistic" || hash === "#/statistic") {
+    return <VisualizationPage variant="statistic" />;
+  }
+
   if (pathname === "/visualization" || hash === "#/visualization") {
-    return <VisualizationPage />;
+    return <VisualizationPage variant="analytic" />;
   }
 
   return <HomePage />;

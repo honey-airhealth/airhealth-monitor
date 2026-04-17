@@ -26,7 +26,7 @@ const pageStyle = {
   '--mono': '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace',
 }
 
-const visualizationCards = [
+const analyticCards = [
   {
     id: 'time-series',
     shortLabel: 'V1',
@@ -69,11 +69,15 @@ const visualizationCards = [
     description: 'Compare PMS7003 readings against the nearest official PM2.5 station — RMSE shows how accurate your sensor is.',
     component: SensorValidation,
   },
+]
+
+const statisticCards = [
   {
     id: 'air-quality-history',
-    shortLabel: 'V7',
+    // Moved from V7 into the Statistic tab and renamed for the requested static grouping.
+    shortLabel: 'Static 1',
     title: 'Air quality history',
-    description: 'Longer-range view of PM2.5, temperature, humidity and MQ9 raw — switch between hourly and daily resolution.',
+    description: 'Line chart showing longer-range PM2.5, temperature, humidity and MQ9 raw — switch between hourly and daily resolution.',
     component: AirQualityHistory,
   },
 ]
@@ -92,6 +96,7 @@ function VisualizationSelector({ cards, activeId, onSelect }) {
           >
             <span className="visualization-selector__kicker">{card.shortLabel}</span>
             <span className="visualization-selector__label">{card.title}</span>
+            <span className="visualization-selector__desc">{card.description}</span>
           </button>
         )
       })}
@@ -99,9 +104,37 @@ function VisualizationSelector({ cards, activeId, onSelect }) {
   )
 }
 
-export default function VisualizationPage() {
-  const [activeId, setActiveId] = React.useState(visualizationCards[0].id)
-  const activeCard = visualizationCards.find((card) => card.id === activeId) || visualizationCards[0]
+const pageCopy = {
+  analytic: {
+    current: 'analytic',
+    title: 'analytic',
+    subtitle: 'Charts for comparing air quality readings with health-search signals.',
+    badge: 'Analytic metrics',
+    path: '/visualization',
+    panelLabel: 'analytic panel',
+    cards: analyticCards,
+  },
+  statistic: {
+    current: 'statistic',
+    title: 'statistic',
+    subtitle: 'Static air-quality history line chart for longer-range sensor review.',
+    badge: 'Statistic metrics',
+    path: '/statistic',
+    panelLabel: 'statistic panel',
+    cards: statisticCards,
+  },
+}
+
+export default function VisualizationPage({ variant = 'analytic' }) {
+  const copy = pageCopy[variant] || pageCopy.analytic
+  const cards = copy.cards
+  const [activeId, setActiveId] = React.useState(cards[0].id)
+
+  React.useEffect(() => {
+    setActiveId(cards[0].id)
+  }, [cards])
+
+  const activeCard = cards.find((card) => card.id === activeId) || cards[0]
   const ActiveComponent = activeCard.component
 
   return (
@@ -184,6 +217,18 @@ export default function VisualizationPage() {
           line-height: 1.28;
           font-weight: 800;
           letter-spacing: -0.02em;
+        }
+
+        .visualization-selector__desc {
+          font-size: 10px;
+          line-height: 1.4;
+          font-weight: 400;
+          color: #8fa8bc;
+          margin-top: 1px;
+        }
+
+        .visualization-selector__item.is-active .visualization-selector__desc {
+          color: #6b8da6;
         }
 
         .visualization-panel {
@@ -278,22 +323,22 @@ export default function VisualizationPage() {
         <RiskSnapshotProvider>
           <div style={{ marginBottom: 16 }}>
             <DashboardHero
-              current="visualization"
+              current={copy.current}
               icon={LineChart}
-              title="Visualization"
-              subtitle="Charts for comparing air quality readings with health-search signals."
-              badge="Visual metrics"
-              path="/visualization"
+              title={copy.title}
+              subtitle={copy.subtitle}
+              badge={copy.badge}
+              path={copy.path}
             />
           </div>
 
           <div className="visualization-shell">
-            <VisualizationSelector cards={visualizationCards} activeId={activeId} onSelect={setActiveId} />
+            <VisualizationSelector cards={cards} activeId={activeId} onSelect={setActiveId} />
 
             <section className="visualization-panel">
               <div className="visualization-panel__hero">
                 <div>
-                  <div className="visualization-panel__eyebrow">{activeCard.shortLabel} · Visualization panel</div>
+                  <div className="visualization-panel__eyebrow">{activeCard.shortLabel} · {copy.panelLabel}</div>
                   <div className="visualization-panel__title">{activeCard.title}</div>
                   <div className="visualization-panel__description">{activeCard.description}</div>
                 </div>
