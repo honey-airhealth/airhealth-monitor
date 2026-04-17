@@ -44,6 +44,9 @@ from app.models import (
     SeedTestDataResponse,
     SensorValidationPoint,
     SensorValidationResponse,
+    StatisticGoogleTrendKeyword,
+    StatisticGoogleTrendPoint,
+    StatisticGoogleTrendsResponse,
     RiskLevel,
     TrendDirection,
     SensorReading,
@@ -93,6 +96,23 @@ SOURCE_TABLE_CONFIG = {
         ],
     },
 }
+
+GOOGLE_TRENDS_KEYWORDS = [
+    ("cough", "Cough", "cough"),
+    ("breathless", "Breathless", "breathless"),
+    ("chest_tight", "Chest tight", "chest_tight"),
+    ("wheeze", "Wheeze", "wheeze"),
+    ("allergy", "Allergy", "allergy"),
+    ("sore_throat", "Sore throat", "sore_throat"),
+    ("itchy_throat", "Itchy throat", "itchy_throat"),
+    ("stuffy_nose", "Stuffy nose", "stuffy_nose"),
+    ("runny_nose", "Runny nose", "runny_nose"),
+    ("headache", "Headache", "headache"),
+    ("dizziness", "Dizziness", "dizziness"),
+    ("nausea", "Nausea", "nausea"),
+    ("itchy_eyes", "Itchy eyes", "itchy_eyes"),
+    ("pm25_search", "PM2.5 search", "pm25"),
+]
 
 
 def _sync_in_memory_readings(snapshot: dict) -> None:
@@ -1406,3 +1426,89 @@ def statistic_1_history(
             "avg_humidity": ky.get("avg_humidity"),
         })
     return {"interval": interval, "count": len(data), "data": data}
+
+
+# Statistic 2: Google Trends keyword search trends by date.
+# Shows Google search terms as daily time-series points for the statistic tab.
+@router.get(
+    "/statistic/google-trends-keywords",
+    response_model=StatisticGoogleTrendsResponse,
+    summary="Statistic 2: Google Trends keyword search terms by date",
+)
+def statistic_2_google_trends_keywords(
+    days: int = Query(30, ge=1, le=365, description="Past N days of Google Trends data"),
+    conn=Depends(get_db),
+):
+    """Statistic 2: Google Trends search keyword time series by date."""
+    cursor = conn.cursor(dictionary=True)
+    since = datetime.now() - timedelta(days=days)
+
+    daily_columns = []
+    for key, _label, column in GOOGLE_TRENDS_KEYWORDS:
+        daily_columns.append(f"ROUND(AVG({column}), 2) AS {key}")
+
+    cursor.execute(
+        f"""
+        SELECT DATE(timestamp) AS period,
+               COUNT(*) AS samples,
+               {", ".join(daily_columns)}
+        FROM google_trends
+        WHERE timestamp >= %s
+        GROUP BY DATE(timestamp)
+        ORDER BY period
+        """,
+        (since,),
+    )
+    rows = cursor.fetchall()
+    cursor.close()
+
+    data = []
+    for row in rows:
+        data.append(StatisticGoogleTrendPoint(
+            period=str(row["period"]),
+            samples=int(row.get("samples") or 0),
+            cough=_coerce_float(row.get("cough")),
+            breathless=_coerce_float(row.get("breathless")),
+            chest_tight=_coerce_float(row.get("chest_tight")),
+            wheeze=_coerce_float(row.get("wheeze")),
+            allergy=_coerce_float(row.get("allergy")),
+            sore_throat=_coerce_float(row.get("sore_throat")),
+            itchy_throat=_coerce_float(row.get("itchy_throat")),
+            stuffy_nose=_coerce_float(row.get("stuffy_nose")),
+            runny_nose=_coerce_float(row.get("runny_nose")),
+            headache=_coerce_float(row.get("headache")),
+            dizziness=_coerce_float(row.get("dizziness")),
+            nausea=_coerce_float(row.get("nausea")),
+            itchy_eyes=_coerce_float(row.get("itchy_eyes")),
+            pm25_search=_coerce_float(row.get("pm25_search")),
+        ))
+
+    keywords = []
+    for key, label, _column in GOOGLE_TRENDS_KEYWORDS:
+        values = [getattr(point, key) for point in data if getattr(point, key) is not None]
+        latest_point = next((point for point in reversed(data) if getattr(point, key) is not None), None)
+        keywords.append(StatisticGoogleTrendKeyword(
+            key=key,
+            label=label,
+            avg_search=round(sum(values) / len(values), 2) if values else None,
+            max_search=max(values) if values else None,
+            latest_search=getattr(latest_point, key) if latest_point else None,
+            latest_at=None,
+        ))
+
+    keywords.sort(
+        key=lambda item: (
+            item.avg_search is not None,
+            item.avg_search if item.avg_search is not None else -1,
+        ),
+        reverse=True,
+    )
+
+    return StatisticGoogleTrendsResponse(
+        statistic="google-trends-keyword-search",
+        period_days=days,
+        sample_count=sum(point.samples for point in data),
+        count=len(data),
+        keywords=keywords,
+        data=data,
+    )

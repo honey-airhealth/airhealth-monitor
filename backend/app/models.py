@@ -307,3 +307,40 @@ class SensorValidationResponse(BaseModel):
     correlation: Optional[float] = None
     n_overlap: int
     data: list[SensorValidationPoint]
+
+
+class StatisticGoogleTrendKeyword(BaseModel):
+    key: str
+    label: str
+    avg_search: Optional[float] = None
+    max_search: Optional[float] = None
+    latest_search: Optional[float] = None
+    latest_at: Optional[datetime] = None
+
+
+class StatisticGoogleTrendPoint(BaseModel):
+    period: str
+    samples: int
+    cough: Optional[float] = None
+    breathless: Optional[float] = None
+    chest_tight: Optional[float] = None
+    wheeze: Optional[float] = None
+    allergy: Optional[float] = None
+    sore_throat: Optional[float] = None
+    itchy_throat: Optional[float] = None
+    stuffy_nose: Optional[float] = None
+    runny_nose: Optional[float] = None
+    headache: Optional[float] = None
+    dizziness: Optional[float] = None
+    nausea: Optional[float] = None
+    itchy_eyes: Optional[float] = None
+    pm25_search: Optional[float] = None
+
+
+class StatisticGoogleTrendsResponse(BaseModel):
+    statistic: str
+    period_days: int
+    sample_count: int
+    count: int
+    keywords: list[StatisticGoogleTrendKeyword]
+    data: list[StatisticGoogleTrendPoint]

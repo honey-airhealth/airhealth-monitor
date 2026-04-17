@@ -8,6 +8,7 @@ import MultiPollutantRadar from './visualization/MultiPollutantRadar.jsx'
 import TimeSeriesPollution from './visualization/TimeSeriesPollution.jsx'
 import SensorValidation from './visualization/SensorValidation.jsx'
 import AirQualityHistory from './visualization/AirQualityHistory.jsx'
+import GoogleTrendsKeywords from './visualization/GoogleTrendsKeywords.jsx'
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext.jsx'
 
 const pageStyle = {
@@ -79,6 +80,14 @@ const statisticCards = [
     title: 'Air quality history',
     description: 'Line chart showing longer-range PM2.5, temperature, humidity and MQ9 raw — switch between hourly and daily resolution.',
     component: AirQualityHistory,
+  },
+  {
+    id: 'google-trends-keywords',
+    // Statistic 2 shows Google Trends keyword search terms as a range-selectable bar chart.
+    shortLabel: 'Static 2',
+    title: 'Google Trends keywords',
+    description: 'Bar chart showing average Google Trends search term frequency over 3 days, 1 week or 2 weeks.',
+    component: GoogleTrendsKeywords,
   },
 ]
 
