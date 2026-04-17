@@ -192,7 +192,7 @@ export default function Dashboard() {
         const params = new URLSearchParams({
           source: selectedSource,
           page: String(currentPage),
-          page_size: "10",
+          page_size: "8",
         });
         const payload = await fetchJsonWithRetry(
           `${API_BASE}/api/v1/integration/source-rows?${params.toString()}`,
@@ -308,7 +308,7 @@ export default function Dashboard() {
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
                   <MetricCard icon={Wind} label="PM2.5" value={snapshot?.pm2_5?.toFixed(1) || "--"} unit="ug/m3" accent="from-cyan-500 to-blue-500" />
-                  <MetricCard icon={AlertTriangle} label="PM10" value={snapshot?.pm10?.toFixed(1) || "--"} unit="ug/m3" accent="from-blue-500 to-indigo-500" />
+                  <MetricCard icon={AlertTriangle} label="CO / MQ9" value={snapshot?.mq9_raw?.toFixed(0) || "--"} unit="raw" accent="from-blue-500 to-indigo-500" />
                   <MetricCard icon={Thermometer} label="Temperature" value={snapshot?.temperature?.toFixed(1) || "--"} unit="°C" accent="from-orange-400 to-rose-500" />
                   <MetricCard icon={Waves} label="Humidity" value={snapshot?.humidity?.toFixed(1) || "--"} unit="%" accent="from-emerald-400 to-cyan-500" />
                 </div>
@@ -316,20 +316,39 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          <div className="grid gap-6">
+          <div className="grid gap-4">
             <Card className="border-white/70 bg-white/84">
-              <CardContent className="p-6">
+              <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-sm font-bold uppercase tracking-[0.28em] text-slate-400">Source freshness</div>
-                    <h2 className="mt-3 text-[2.3rem] leading-[0.96] font-black tracking-[-0.05em] text-slate-950">Sensor pipeline</h2>
+                    <div className="text-xs font-bold uppercase tracking-[0.28em] text-slate-400">Source freshness</div>
+                    <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-slate-950">Sensor pipeline</h2>
                   </div>
-                  <div className="flex size-11 items-center justify-center rounded-[1.1rem] bg-sky-50 text-sky-500">
-                    <CloudSun className="size-6" />
+                  <div className="flex size-10 items-center justify-center rounded-[1rem] bg-sky-50 text-sky-500">
+                    <CloudSun className="size-5" />
                   </div>
                 </div>
-                <div className="mt-6 grid gap-3.5">
-                  {sources.map((source) => (
+                <div className="mt-4 grid gap-2.5">
+                  {sources.filter(s => ['PMS7003','KY-015','MQ-9'].includes(s.source)).map((source) => (
+                    <SourceItem key={source.source} source={source} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-white/70 bg-white/84">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-[0.28em] text-slate-400">Source freshness</div>
+                    <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-slate-950">Web APIs pipeline</h2>
+                  </div>
+                  <div className="flex size-10 items-center justify-center rounded-[1rem] bg-indigo-50 text-indigo-500">
+                    <CloudSun className="size-5" />
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-2.5">
+                  {sources.filter(s => ['Open-Meteo','Official PM2.5','Google Trends'].includes(s.source)).map((source) => (
                     <SourceItem key={source.source} source={source} />
                   ))}
                 </div>
@@ -377,7 +396,7 @@ export default function Dashboard() {
               <div className="grid gap-3 border-b border-slate-100 bg-white/80 px-4 py-4 md:grid-cols-[1.15fr_1fr_auto] md:items-center">
                 <div>
                   <div className="text-lg font-black tracking-[-0.04em] text-slate-900">{tableData?.source || selectedSource}</div>
-                  <div className="mt-1 text-sm font-medium text-slate-500">Showing real database rows, 10 records per page.</div>
+                  <div className="mt-1 text-sm font-medium text-slate-500">Showing real database rows, 8 records per page.</div>
                 </div>
                 <div className="text-sm font-semibold text-slate-500">
                   Total rows: {tableData?.total_rows ?? "--"}
@@ -399,12 +418,12 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              <div className={`divide-y divide-slate-100 bg-white/70 transition-opacity ${tableLoading ? "opacity-70" : "opacity-100"}`}>
+              <div className={`max-h-[340px] overflow-y-auto divide-y divide-slate-100 bg-white/70 transition-opacity ${tableLoading ? "opacity-70" : "opacity-100"}`}>
                 {tableError ? (
-                  <div className="px-4 py-6 text-sm font-semibold text-rose-600">{tableError}</div>
+                  <div className="px-4 py-4 text-sm font-semibold text-rose-600">{tableError}</div>
                 ) : null}
                 {!tableError && (tableData?.rows || []).map((row, index) => (
-                  <div key={`${tableData.source}-${index}`} className="grid gap-3 px-4 py-4 md:gap-4" style={{ gridTemplateColumns: `repeat(${tableData?.columns?.length || 1}, minmax(0, 1fr))` }}>
+                  <div key={`${tableData.source}-${index}`} className="grid gap-3 px-4 py-2.5 md:gap-4" style={{ gridTemplateColumns: `repeat(${tableData?.columns?.length || 1}, minmax(0, 1fr))` }}>
                     {(tableData?.columns || []).map((column) => (
                       <div key={column} className="min-w-0">
                         <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400 md:hidden">{column}</div>
