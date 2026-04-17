@@ -1,12 +1,8 @@
 import React from 'react';
 import HealthRisk from './api_dashboard/HealthRisk';
-import Correlation from './api_dashboard/Correlation';
-import Discomfort from './api_dashboard/Discomfort';
 import WorstHours from './api_dashboard/WorstHours';
-import MainContributor from './api_dashboard/MainContributor';
-import { CompareOfficial, Trend } from './api_dashboard/StatusPanels';
 import { RiskSnapshotProvider } from './api_dashboard/RiskSnapshotContext';
-import { Braces } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import DashboardHero from './DashboardHero.jsx';
 
 const pageStyle = {
@@ -27,12 +23,7 @@ const pageStyle = {
 
 const dashboardCards = [
   { id: 'health-risk', shortLabel: 'Q1', title: 'Current health risk', description: 'Latest score, level, and primary contributor from the current snapshot.', component: HealthRisk },
-  { id: 'correlation', shortLabel: 'Q2', title: 'PM2.5 vs illness trends', description: 'Relationship between pollution patterns and symptom-related interest.', component: Correlation },
-  { id: 'discomfort', shortLabel: 'Q3', title: 'Discomfort index', description: 'Combined comfort pressure from heat, humidity, and PM2.5.', component: Discomfort },
-  { id: 'worst-hours', shortLabel: 'Q4', title: 'Worst hours of day', description: 'Hours when air conditions are typically the most difficult.', component: WorstHours },
-  { id: 'main-contributor', shortLabel: 'Q5', title: 'Main risk contributor', description: 'Factor contributing most to the total risk score.', component: MainContributor },
-  { id: 'compare-official', shortLabel: 'Q6', title: 'Local vs official PM2.5', description: 'Compare local sensor readings with official PM2.5 data.', component: CompareOfficial },
-  { id: 'trend', shortLabel: 'Q7', title: 'Trend direction', description: 'Check whether conditions are improving, flat, or worsening.', component: Trend },
+  { id: 'worst-hours', shortLabel: 'Q2', title: 'Worst hours of day', description: 'Hours when air conditions are typically the most difficult.', component: WorstHours },
 ];
 
 function DashboardSelector({ cards, activeId, onSelect }) {
@@ -239,12 +230,12 @@ export default function ApiDashboardPage() {
         <RiskSnapshotProvider>
           <div style={{ marginBottom: 16 }}>
             <DashboardHero
-              current="api"
-              icon={Braces}
-              title="API Dashboard"
-              subtitle="Health and air-quality insights powered by the integration API."
-              badge="API metrics"
-              path="/api"
+              current="suggestion"
+              icon={Lightbulb}
+              title="suggestion"
+              subtitle="Health and air-quality suggestions from the integration service."
+              badge="Suggestion metrics"
+              path="/suggestion"
             />
           </div>
 

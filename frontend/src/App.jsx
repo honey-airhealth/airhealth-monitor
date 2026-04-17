@@ -31,7 +31,7 @@ export default function App() {
     return <Dashboard />;
   }
 
-  if (pathname === "/api" || hash === "#/api") {
+  if (pathname === "/suggestion" || pathname === "/api" || hash === "#/suggestion" || hash === "#/api") {
     return <ApiDashboardPage />;
   }
 

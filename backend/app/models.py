@@ -26,7 +26,7 @@ class LatestReadingsResponse(BaseModel):
     readings: dict[str, SensorReading]
 
 
-# Integration models (Q1–Q9)
+# Integration models
 class RiskLevel(str, Enum):
     safe = "safe"
     moderate = "moderate"
@@ -50,57 +50,15 @@ class HealthRiskResponse(BaseModel):
     official_pm25: Optional[float] = None
 
 
-class CorrelationResponse(BaseModel):
-    """Q2"""
-    period_days: int
-    pm25_vs_headache: Optional[float] = None
-    pm25_vs_cough: Optional[float] = None
-    co_vs_breathing: Optional[float] = None
-    pm25_vs_pm25_search: Optional[float] = None
-    interpretation: str
-
-
-class DiscomfortResponse(BaseModel):
-    """Q3"""
-    timestamp: datetime
-    discomfort_index: float = Field(..., ge=0, le=100)
-    heat_component: float
-    humidity_component: float
-    pm25_component: float
-    description: str
-
-
 class WorstHoursResponse(BaseModel):
-    """Q4"""
+    """Q2"""
     hour: int
     avg_pm25: float
     avg_co: float
     risk_level: RiskLevel
 
 
-class MainContributorResponse(BaseModel):
-    """Q5"""
-    timestamp: datetime
-    main_contributor: str
-    pm25_contribution: float
-    co_contribution: float
-    heat_contribution: float
-    humidity_contribution: float
-    total_risk: float
-
-
-class CompareOfficialResponse(BaseModel):
-    """Q7"""
-    timestamp: datetime
-    local_pm25: Optional[float]
-    official_pm25: Optional[float]
-    difference: Optional[float]
-    local_source: str = "PMS7003 sensor"
-    official_source: str = "OpenAQ"
-
-
 class TrendResponse(BaseModel):
-    """Q8"""
     direction: TrendDirection
     pm25_trend: TrendDirection
     co_trend: TrendDirection

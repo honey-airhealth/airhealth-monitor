@@ -1,14 +1,14 @@
 const tabs = [
   { href: "/", label: "Home", key: "home", widthClass: "w-[92px]" },
   { href: "/dashboard", label: "Live", key: "dashboard", widthClass: "w-[92px]" },
-  { href: "/api", label: "API", key: "api", widthClass: "w-[92px]" },
+  { href: "/suggestion", label: "suggestion", key: "suggestion", widthClass: "w-[126px]" },
   { href: "/statistic", label: "statistic", key: "statistic", widthClass: "w-[112px]" },
   { href: "/visualization", label: "analytic", key: "analytic", widthClass: "w-[112px]" },
 ];
 
 export default function PageTabs({ current }) {
   return (
-    <div className="inline-flex w-[560px] flex-nowrap items-center justify-between gap-2 rounded-full border border-white/15 bg-slate-950/20 p-2 backdrop-blur-md">
+    <div className="inline-flex w-[594px] flex-nowrap items-center justify-between gap-2 rounded-full border border-white/15 bg-slate-950/20 p-2 backdrop-blur-md">
       {tabs.map((tab) => {
         const active = current === tab.key;
         return (

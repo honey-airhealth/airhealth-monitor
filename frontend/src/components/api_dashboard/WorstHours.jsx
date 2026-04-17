@@ -24,7 +24,7 @@ export default function WorstHours() {
           </select>
           <button className="refresh-btn" onClick={refetch}>↺</button>
         </div>
-      }>Q4 · Worst hours of day</SectionTitle>
+      }>Q2 · Worst hours of day</SectionTitle>
 
       {loading && <Loader />}
       {error   && <ErrorBox msg={error} onRetry={refetch} />}
