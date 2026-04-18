@@ -3,6 +3,7 @@ import { Features } from "./components/Features";
 import { Sensors } from "./components/Sensors";
 import { DataSources } from "./components/DataSources";
 import { ApiCapabilities } from "./components/ApiCapabilities";
+import { AiFeature } from "./components/AiFeature";
 import ApiDashboardPage from "./components/ApiDashboardPage.jsx";
 import VisualizationPage from "./components/VisualizationPage.jsx";
 import ForecastPage from "./components/ForecastPage.jsx";
@@ -19,6 +20,7 @@ function HomePage() {
       <Sensors />
       <DataSources />
       <ApiCapabilities />
+      <AiFeature />
       <Team />
       <Footer />
     </div>

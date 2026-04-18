@@ -5,28 +5,28 @@ const features = [
   {
     icon: Shield,
     title: 'Real-Time Health Risk Indicators',
-    description: 'Continuous monitoring of environmental conditions with instant health risk assessment based on PM2.5, CO, smoke, temperature, and humidity levels.',
+    description: 'Health risk scoring from the latest PM2.5, PM10, MQ-9 raw, temperature, humidity, and official PM2.5 context.',
     gradient: 'from-emerald-500 to-teal-500',
     bgGradient: 'from-emerald-50 to-teal-50',
   },
   {
     icon: LineChart,
     title: 'Time-Series Visualizations',
-    description: 'Compare PM2.5 and CO readings with health-related search interest over time to reveal hidden patterns and correlations.',
+    description: 'Compare PM2.5, PM10, MQ-9, temperature, and humidity readings with available Google Trends health-keyword data.',
     gradient: 'from-blue-500 to-indigo-500',
     bgGradient: 'from-blue-50 to-indigo-50',
   },
   {
     icon: Zap,
-    title: 'Predictive Analytics',
-    description: 'Estimate discomfort levels and potential health concerns using machine learning algorithms and historical data patterns.',
+    title: 'Short-Horizon Forecasts',
+    description: 'Project PM2.5, temperature, and humidity over the next 6 to 12 hours using recent trends and weather context.',
     gradient: 'from-yellow-500 to-orange-500',
     bgGradient: 'from-yellow-50 to-orange-50',
   },
   {
     icon: Brain,
     title: 'Correlation Analysis',
-    description: 'Discover relationships among PM2.5, CO, smoke, humidity, temperature, and illness-related signals through advanced analytics.',
+    description: 'Explore relationships among PM2.5, PM10, MQ-9, humidity, temperature, and health-related search signals.',
     gradient: 'from-purple-500 to-pink-500',
     bgGradient: 'from-purple-50 to-pink-50',
   },
@@ -40,7 +40,7 @@ const features = [
   {
     icon: Map,
     title: 'Data Validation',
-    description: 'Cross-reference local sensor readings with official air quality reports from IQAir and OpenAQ for accuracy and reliability.',
+    description: 'Compare local PMS7003 readings with the official PM2.5 reference data stored by the backend.',
     gradient: 'from-cyan-500 to-blue-500',
     bgGradient: 'from-cyan-50 to-blue-50',
   },
@@ -70,7 +70,7 @@ export function Features() {
             </span>
           </h2>
           <p className="animate-fade-up mx-auto max-w-3xl text-[13px] leading-6 text-slate-600 md:text-[0.96rem]" style={{ animationDelay: '0.14s' }}>
-            Transform raw environmental data into actionable health insights with our comprehensive monitoring and analytics platform.
+            Transform the project&apos;s sensor, weather, official PM2.5, and Google Trends data into practical monitoring views.
           </p>
         </div>
 

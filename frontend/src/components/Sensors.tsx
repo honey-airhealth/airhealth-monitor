@@ -1,13 +1,13 @@
-import { Cpu, Thermometer, Flame, AlertTriangle } from 'lucide-react';
+import { Thermometer, CloudFog, AlertTriangle } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Card } from './ui/card';
 
 const sensors = [
   {
     code: 'PMS7003',
-    name: 'PM2.5 Dust Sensor',
+    name: 'PM2.5 / PM10 Dust Sensor',
     icon: AlertTriangle,
-    description: 'Measures fine particulate matter (PM2.5) concentration in the air',
+    description: 'Measures fine and coarse particulate matter readings used by the live dashboard and statistics pages',
     gradient: 'from-orange-500 to-red-500',
     bgGradient: 'from-orange-50 to-red-50',
     iconColor: 'text-orange-500',
@@ -24,20 +24,10 @@ const sensors = [
     badgeColor: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0',
   },
   {
-    code: 'MQ-2',
-    name: 'Smoke & Gas Sensor',
-    icon: Flame,
-    description: 'Detects smoke, LPG, and combustible gases for air quality events',
-    gradient: 'from-red-500 to-pink-500',
-    bgGradient: 'from-red-50 to-pink-50',
-    iconColor: 'text-red-500',
-    badgeColor: 'bg-gradient-to-r from-red-500 to-pink-500 text-white border-0',
-  },
-  {
     code: 'MQ-9',
-    name: 'Carbon Monoxide (CO) Sensor',
-    icon: Cpu,
-    description: 'Detects toxic carbon monoxide from vehicle exhaust and combustion',
+    name: 'MQ-9 Gas Sensor',
+    icon: CloudFog,
+    description: 'Records MQ-9 raw gas readings that are used as the CO-related signal in risk and correlation views',
     gradient: 'from-purple-500 to-indigo-500',
     bgGradient: 'from-purple-50 to-indigo-50',
     iconColor: 'text-purple-500',
@@ -69,7 +59,7 @@ export function Sensors() {
             </span>
           </h2>
           <p className="animate-fade-up mx-auto max-w-2xl text-[13px] leading-6 text-slate-600 md:text-sm" style={{ animationDelay: '0.14s' }}>
-            Real-time environmental data collected from multiple sensor modules for comprehensive air quality monitoring.
+            Environmental data collected from the sensor modules currently used by this project.
           </p>
         </div>
 
@@ -79,7 +69,9 @@ export function Sensors() {
             return (
               <Card
                 key={index}
-                className="animate-fade-up group relative overflow-hidden border border-white/80 bg-white/88 p-4 shadow-[0_22px_58px_rgba(148,163,184,0.14)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_74px_rgba(99,102,241,0.16)] md:p-5"
+                className={`animate-fade-up group relative overflow-hidden border border-white/80 bg-white/88 p-4 shadow-[0_22px_58px_rgba(148,163,184,0.14)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_28px_74px_rgba(99,102,241,0.16)] md:p-5 ${
+                  index === sensors.length - 1 ? 'md:col-span-2 md:mx-auto md:w-[calc((100%-1rem)/2)]' : ''
+                }`}
                 style={{ animationDelay: `${0.08 + index * 0.07}s` }}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${sensor.bgGradient} opacity-[0.28] transition-opacity duration-300 group-hover:opacity-[0.42]`} />
@@ -115,7 +107,7 @@ export function Sensors() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.24),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.08))]" />
             <div className="relative z-10">
               <p className="mb-2 text-sm font-semibold text-white md:text-base">
-                ⏱️ Automatic Timestamp Logging
+                Automatic Timestamp Logging
               </p>
               <p className="max-w-2xl text-[13px] text-white/92 md:text-sm">
                 All sensor readings are recorded with precise date and time information for accurate time-series analysis
