@@ -177,18 +177,68 @@ Open:
 - `POST /api/v1/readings`
 - `POST /api/v1/integration/seed-test-data`
 - `GET /api/v1/integration/health-risk`
-- `GET /api/v1/integration/correlation`
-- `GET /api/v1/integration/discomfort`
 - `GET /api/v1/integration/worst-hours`
-- `GET /api/v1/integration/main-contributor`
-- `GET /api/v1/integration/history`
-- `GET /api/v1/integration/compare-official`
-- `GET /api/v1/integration/trend`
-- `GET /api/v1/integration/safety`
-- `GET /api/v1/integration/visualization/time-series`
-- `GET /api/v1/integration/visualization/correlation-scatter`
+- `GET /api/v1/integration/weekly-summary`
 - `GET /api/v1/integration/live-dashboard`
 - `GET /api/v1/integration/source-rows`
+- `GET /api/v1/integration/visualization/time-series`
+- `GET /api/v1/integration/visualization/correlation-scatter`
+- `GET /api/v1/integration/visualization/hourly-heatmap`
+- `GET /api/v1/integration/visualization/radar-pollutant`
+- `GET /api/v1/integration/visualization/correlation-matrix`
+- `GET /api/v1/integration/visualization/sensor-validation`
+- `GET /api/v1/integration/statistic/sensor-descriptive`
+- `GET /api/v1/integration/history`
+- `GET /api/v1/integration/statistic/google-trends-keywords`
+- `GET /api/v1/integration/statistic/wind-speed`
+- `POST /api/v1/integration/ai-chat`
+
+### AirHealth AI Chat API
+
+`POST /api/v1/integration/ai-chat` uses Gemini to answer PM2.5, cough, headache, mask, and first-care questions with live sensor context.
+
+Request:
+
+```json
+{
+  "message": "PM2.5 is very high, but I need to go outside. What should I do?",
+  "history": [
+    {
+      "role": "assistant",
+      "content": "Hi, I am AirHealth AI."
+    },
+    {
+      "role": "user",
+      "content": "Can I exercise outside today?"
+    }
+  ]
+}
+```
+
+Response:
+
+```json
+{
+  "answer": "Wear a well-fitted N95/KN95 mask, limit time outdoors, avoid strenuous activity, and check symptoms.",
+  "model": "gemini-2.0-flash-lite",
+  "generated_at": "2026-04-18T10:00:00",
+  "snapshot": {
+    "pm2_5": 42.0,
+    "mq9_raw": 480.0,
+    "temperature": 30.0,
+    "humidity": 62.0,
+    "official_pm25": 40.0,
+    "risk_level": "moderate"
+  }
+}
+```
+
+Notes:
+
+- `GEMINI_API_KEY` is required.
+- `GEMINI_MODEL` defaults to `gemini-2.0-flash-lite`.
+- `GEMINI_FALLBACK_MODELS` is a comma-separated fallback list used when the primary model is unavailable or quota-limited.
+- The answer is practical first-care guidance, not a medical diagnosis.
 
 ---
 
