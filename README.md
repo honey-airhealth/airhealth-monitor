@@ -145,6 +145,24 @@ Then open the local Vite URL, usually `http://localhost:5173`.
 
 If you want the frontend to call the backend, set the API base in your env file before starting it.
 
+### Environment variables
+
+Create a local env file from the example:
+
+```bash
+cp .env.example .env
+```
+
+Important variables used by this project:
+
+- `ALLOWED_ORIGINS` for backend CORS
+- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_POOL_SIZE` for local backend database access
+- `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS` for AI chat
+- `VITE_API_BASE_URL` for frontend-to-backend requests
+- `COMPOSE_DB_*`, `COMPOSE_MYSQL_ROOT_PASSWORD`, and `TZ` for Docker Compose
+
+Keep real secrets only in `.env` and do not commit them.
+
 ### Frontend and backend together without Docker
 
 Run backend in one terminal:

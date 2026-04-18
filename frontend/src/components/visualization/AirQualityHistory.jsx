@@ -18,6 +18,7 @@ const INTERVAL_OPTIONS = [
 
 const METRICS = [
   { key: 'pm25', dataKey: 'pm25', label: 'PM2.5 (µg/m³)', color: '#3b82f6' },
+  { key: 'pm10', dataKey: 'pm10', label: 'PM10 (µg/m³)', color: '#7c3aed' },
   { key: 'temp', dataKey: 'temp', label: 'Temp (°C)',      color: '#f97316' },
   { key: 'hum',  dataKey: 'hum',  label: 'Humidity (%)',   color: '#10b981' },
   { key: 'co',   dataKey: 'co',   label: 'MQ9 raw',        color: '#ef4444' },
@@ -87,6 +88,7 @@ export default function AirQualityHistory() {
     .map(d => ({
       t: formatLabel(d.period),
       pm25: d.avg_pm25,
+      pm10: d.avg_pm10,
       temp: d.avg_temperature,
       hum:  d.avg_humidity,
       co:   d.avg_mq9_raw,
@@ -123,6 +125,25 @@ export default function AirQualityHistory() {
       <div style={{
         background: 'var(--bg2)', borderRadius: 12, border: '1px solid var(--border)', padding: '16px 8px',
       }}>
+        {(data?.weather_summary || data?.weather_outlook) && (
+          <div style={{
+            margin: '0 8px 14px',
+            borderRadius: 10,
+            border: '1px solid rgba(203, 213, 225, 0.92)',
+            background: 'rgba(248, 250, 252, 0.95)',
+            padding: '10px 12px',
+            fontSize: 12,
+            color: 'var(--t2)',
+            lineHeight: 1.6,
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--t3)', marginBottom: 5 }}>
+              PM2.5 weather insight
+            </div>
+            {data?.weather_summary ? <div>{data.weather_summary}</div> : null}
+            {data?.weather_outlook ? <div style={{ marginTop: 6, color: 'var(--t1)', fontWeight: 700 }}>{data.weather_outlook}</div> : null}
+          </div>
+        )}
+
         {loading ? (
           <div style={{ height: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--t3)' }}>Loading…</div>
         ) : error ? (

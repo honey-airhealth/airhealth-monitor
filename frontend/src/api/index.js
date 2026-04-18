@@ -1,6 +1,7 @@
 import axios from 'axios'
+import { resolveIntegrationApiBase } from './base'
 
-const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api/v1/integration'
+const BASE = resolveIntegrationApiBase()
 
 const api = axios.create({ baseURL: BASE, timeout: 10000 })
 const MAX_CONCURRENT_REQUESTS = 4
@@ -47,3 +48,5 @@ export const getSensorDescriptive   = (hours = 168, interval = 'hourly') => api.
 export const getGoogleTrendsKeywords = (days = 30) => api.get('/statistic/google-trends-keywords', { params: { days } })
 export const getWeeklySummary       = () => api.get('/weekly-summary')
 export const getWindSpeed           = (hours = 168, interval = 'hourly') => api.get('/statistic/wind-speed', { params: { hours, interval } })
+export const getPM25Forecast        = (lookahead_hours = 12, base_hours = 12) => api.get('/forecast/pm25', { params: { lookahead_hours, base_hours } })
+export const getForecast           = (metric = 'pm25', lookahead_hours = 12, base_hours = 12) => api.get('/forecast', { params: { metric, lookahead_hours, base_hours } })

@@ -14,6 +14,7 @@ Actual table schemas:
 from fastapi import APIRouter, Depends, Query, HTTPException
 from datetime import datetime, timedelta
 from typing import Optional
+from collections import Counter
 import math
 import os
 import numpy as np
@@ -41,6 +42,10 @@ from app.models import (
     MatrixVariable,
     MatrixCell,
     CorrelationMatrixResponse,
+    ForecastPoint,
+    ForecastResponse,
+    PM25ForecastPoint,
+    PM25ForecastResponse,
     SeedTestDataResponse,
     SensorValidationPoint,
     SensorValidationResponse,
@@ -138,6 +143,7 @@ def _ai_snapshot_context(conn) -> dict:
         official = _get_official_pm25(conn)
         score, level, main, _contribs, rec = _calc_risk(
             sensor["pm2_5"],
+            sensor["pm10"],
             sensor["mq9_raw"],
             sensor["temperature"],
             sensor["humidity"],
@@ -146,6 +152,7 @@ def _ai_snapshot_context(conn) -> dict:
         return {
             "recorded_at": sensor["recorded_at"].isoformat() if sensor.get("recorded_at") else None,
             "pm2_5": round(sensor["pm2_5"], 2),
+            "pm10": round(sensor["pm10"], 2),
             "mq9_raw": round(sensor["mq9_raw"], 2),
             "temperature": round(sensor["temperature"], 2),
             "humidity": round(sensor["humidity"], 2),
@@ -202,6 +209,7 @@ def _latest_combined(conn) -> dict:
     return {
         "recorded_at": (pm or ky or mq)["recorded_at"],
         "pm2_5": float(pm["pm2_5"]) if pm else 0,
+        "pm10": float(pm["pm10"]) if pm else 0,
         "temperature": float(ky["temperature"]) if ky else 0,
         "humidity": float(ky["humidity"]) if ky else 0,
         "mq9_raw": float(mq["mq9_raw"]) if mq else 0,
@@ -240,6 +248,7 @@ def _combined_at(conn, snapshot_at: Optional[datetime] = None) -> dict:
     return {
         "recorded_at": snapshot_at,
         "pm2_5": float(pm["pm2_5"]) if pm else 0,
+        "pm10": float(pm["pm10"]) if pm else 0,
         "temperature": float(ky["temperature"]) if ky else 0,
         "humidity": float(ky["humidity"]) if ky else 0,
         "mq9_raw": float(mq["mq9_raw"]) if mq else 0,
@@ -286,18 +295,201 @@ def _serialize_row(row: dict) -> dict:
     return serialized
 
 
-def _calc_risk(pm25: float, mq9_raw: float, temp: float, humidity: float, official_pm25=None):
+WEATHER_CODE_LABELS = {
+    0: "Clear sky",
+    1: "Mainly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Fog",
+    48: "Rime fog",
+    51: "Light drizzle",
+    53: "Moderate drizzle",
+    55: "Dense drizzle",
+    56: "Freezing drizzle",
+    57: "Dense freezing drizzle",
+    61: "Light rain",
+    63: "Moderate rain",
+    65: "Heavy rain",
+    66: "Freezing rain",
+    67: "Heavy freezing rain",
+    71: "Light snow",
+    73: "Moderate snow",
+    75: "Heavy snow",
+    77: "Snow grains",
+    80: "Light rain showers",
+    81: "Moderate rain showers",
+    82: "Violent rain showers",
+    85: "Light snow showers",
+    86: "Heavy snow showers",
+    95: "Thunderstorm",
+    96: "Thunderstorm with hail",
+    99: "Heavy thunderstorm with hail",
+}
+
+RAINY_CODES = {51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99}
+FOG_CODES = {45, 48}
+
+
+def _weather_code_label(code: Optional[int]) -> str:
+    if code is None:
+        return "Unknown weather"
+    return WEATHER_CODE_LABELS.get(code, f"Weather code {code}")
+
+
+def _dominant_weather_code(values: list[Optional[int]]) -> Optional[int]:
+    present = [int(value) for value in values if value is not None]
+    if not present:
+        return None
+    return Counter(present).most_common(1)[0][0]
+
+
+def _build_weather_pm25_insight(
+    pm25_trend: TrendDirection,
+    avg_precipitation: Optional[float],
+    weather_code: Optional[int],
+) -> tuple[str, str]:
+    label = _weather_code_label(weather_code)
+    avg_precipitation = round(avg_precipitation, 2) if avg_precipitation is not None else None
+
+    rainy = weather_code in RAINY_CODES or (avg_precipitation is not None and avg_precipitation >= 0.2)
+    foggy = weather_code in FOG_CODES
+
+    if rainy:
+        summary = (
+            f"{label} with average precipitation around {avg_precipitation} mm suggests washout conditions "
+            "that can help lower PM2.5."
+            if avg_precipitation is not None
+            else f"{label} suggests washout conditions that can help lower PM2.5."
+        )
+        if pm25_trend == TrendDirection.worsening:
+            outlook = "PM2.5 is still rising, but continued rain may limit further buildup."
+        elif pm25_trend == TrendDirection.improving:
+            outlook = "Rain-supported washout is consistent with the improving PM2.5 trend."
+        else:
+            outlook = "If rain persists, PM2.5 should stay stable or ease slightly."
+        return summary, outlook
+
+    if foggy:
+        summary = f"{label} often traps pollutants near the surface, so PM2.5 can linger even without new emissions."
+        if pm25_trend == TrendDirection.worsening:
+            outlook = "With foggy conditions and a worsening trend, PM2.5 may keep climbing until mixing improves."
+        elif pm25_trend == TrendDirection.improving:
+            outlook = "PM2.5 is improving, but fog can still slow down full dispersion."
+        else:
+            outlook = "Expect slow PM2.5 clearing unless wind or rain improves ventilation."
+        return summary, outlook
+
+    summary = (
+        f"{label} with little rain offers limited particle washout, so PM2.5 depends more on nearby emissions and airflow."
+    )
+    if pm25_trend == TrendDirection.worsening:
+        outlook = "Dry, stable weather means PM2.5 may continue rising if emission sources stay active."
+    elif pm25_trend == TrendDirection.improving:
+        outlook = "PM2.5 is easing, but without rain the improvement may be gradual rather than sharp."
+    else:
+        outlook = "Without rain support, PM2.5 is likely to stay near current levels unless conditions change."
+    return summary, outlook
+
+
+def _weather_period_insight(conn, since: datetime, pm25_trend: TrendDirection) -> tuple[Optional[float], Optional[int], str, str]:
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT precipitation, weather_code
+        FROM openmeteo_readings
+        WHERE recorded_at >= %s
+        ORDER BY recorded_at
+        """,
+        (since,),
+    )
+    rows = cursor.fetchall()
+    cursor.close()
+
+    precip_values = [_coerce_float(row.get("precipitation")) for row in rows]
+    avg_precipitation = (
+        round(sum(value for value in precip_values if value is not None) / len([value for value in precip_values if value is not None]), 2)
+        if any(value is not None for value in precip_values)
+        else None
+    )
+    weather_code = _dominant_weather_code([row.get("weather_code") for row in rows])
+    summary, outlook = _build_weather_pm25_insight(pm25_trend, avg_precipitation, weather_code)
+    return avg_precipitation, weather_code, summary, outlook
+
+
+def _trend_slope(values: list[float]) -> float:
+    if len(values) < 2:
+        return 0.0
+    return values[-1] - values[0]
+
+
+def _forecast_weather_adjustment(avg_precipitation: Optional[float], weather_code: Optional[int], avg_wind_speed: Optional[float]) -> float:
+    adjustment = 0.0
+    if avg_precipitation is not None:
+        adjustment -= min(avg_precipitation * 3.5, 8.0)
+    if weather_code in RAINY_CODES:
+        adjustment -= 2.0
+    elif weather_code in FOG_CODES:
+        adjustment += 2.5
+    elif weather_code in {0, 1, 2, 3}:
+        adjustment += 1.0
+
+    if avg_wind_speed is not None:
+        if avg_wind_speed >= 14:
+            adjustment -= 4.0
+        elif avg_wind_speed >= 8:
+            adjustment -= 2.0
+        elif avg_wind_speed <= 3:
+            adjustment += 2.0
+    return round(adjustment, 2)
+
+
+def _forecast_confidence(sample_count: int, avg_wind_speed: Optional[float], avg_precipitation: Optional[float]) -> str:
+    if sample_count < 6:
+        return "low"
+    if avg_wind_speed is None or avg_precipitation is None:
+        return "medium"
+    return "medium-high" if sample_count >= 12 else "medium"
+
+
+def _generic_weather_summary(metric_label: str, trend: TrendDirection, avg_precipitation: Optional[float], weather_code: Optional[int], avg_wind_speed: Optional[float]) -> str:
+    weather_label = _weather_code_label(weather_code)
+    rain_text = f"Rain {avg_precipitation} mm" if avg_precipitation is not None else "No rain estimate"
+    wind_text = f"wind {avg_wind_speed} km/h" if avg_wind_speed is not None else "unknown wind"
+    return f"{metric_label} is {trend.value} with {weather_label.lower()}, {rain_text}, and {wind_text} in the latest weather window."
+
+
+def _calc_risk(pm25: float, pm10: float, mq9_raw: float, temp: float, humidity: float, official_pm25=None):
     """
     Health risk score 0–100.
     mq9_raw is analog (0–4095): ~100-200 clean, ~500 moderate, ~1000+ high.
     """
-    # PM2.5 (0-40 pts)
-    if pm25 <= 15:       p = 0
-    elif pm25 <= 37.5:   p = (pm25 - 15) / 22.5 * 20
-    elif pm25 <= 75:     p = 20 + (pm25 - 37.5) / 37.5 * 10
-    else:                p = min(30 + (pm25 - 75) / 75 * 10, 40)
+    # PM2.5 (0-32 pts)
+    if pm25 <= 15:
+        p25 = 0
+    elif pm25 <= 37.5:
+        p25 = (pm25 - 15) / 22.5 * 16
+    elif pm25 <= 75:
+        p25 = 16 + (pm25 - 37.5) / 37.5 * 8
+    else:
+        p25 = min(24 + (pm25 - 75) / 75 * 8, 32)
+
+    # PM10 (0-8 pts)
+    if pm10 <= 45:
+        p10 = 0
+    elif pm10 <= 100:
+        p10 = (pm10 - 45) / 55 * 4
+    elif pm10 <= 180:
+        p10 = 4 + (pm10 - 100) / 80 * 2
+    else:
+        p10 = min(6 + (pm10 - 180) / 120 * 2, 8)
+
+    dust = p25 + p10
     if official_pm25 is not None and (pm25 + official_pm25) / 2 > pm25:
-        p = min(p * 1.1, 40)
+        dust = min(dust * 1.1, 40)
+        if dust > 0:
+            scale = dust / max(p25 + p10, 1e-9)
+            p25 *= scale
+            p10 *= scale
 
     # MQ9 raw → CO score (0-25 pts)
     if mq9_raw <= 200:       c = 0
@@ -315,8 +507,14 @@ def _calc_risk(pm25: float, mq9_raw: float, temp: float, humidity: float, offici
     elif humidity > 70:        hu = min((humidity - 70) / 30 * 15, 15)
     else:                      hu = min((30 - humidity) / 30 * 10, 15)
 
-    total = min(round(p + c + h + hu, 1), 100)
-    contribs = {"pm25": round(p, 1), "co": round(c, 1), "heat": round(h, 1), "humidity": round(hu, 1)}
+    total = min(round(dust + c + h + hu, 1), 100)
+    contribs = {
+        "pm25": round(p25, 1),
+        "pm10": round(p10, 1),
+        "co": round(c, 1),
+        "heat": round(h, 1),
+        "humidity": round(hu, 1),
+    }
     main = max(contribs, key=contribs.get)
 
     if total <= 25:
@@ -325,6 +523,9 @@ def _calc_risk(pm25: float, mq9_raw: float, temp: float, humidity: float, offici
         level, rec = RiskLevel.moderate, "Moderate risk. Sensitive groups should limit outdoor activity."
     else:
         level, rec = RiskLevel.unhealthy, "Unhealthy. Avoid outdoor exercise. Wear a mask."
+
+    if p10 >= 3:
+        rec += " Elevated coarse dust (PM10) suggests road dust or resuspended particles may also be contributing."
 
     return total, level, main, contribs, rec
 
@@ -401,12 +602,12 @@ def q1_health_risk(timestamp: Optional[datetime] = Query(None), conn=Depends(get
     sensor = _combined_at(conn, timestamp)
     official = _get_official_pm25(conn, timestamp)
     score, level, main, contribs, rec = _calc_risk(
-        sensor["pm2_5"], sensor["mq9_raw"],
+        sensor["pm2_5"], sensor["pm10"], sensor["mq9_raw"],
         sensor["temperature"], sensor["humidity"], official)
     return HealthRiskResponse(
         timestamp=sensor["recorded_at"], risk_score=score, risk_level=level,
         main_contributor=main, contributions=contribs,
-        recommendation=rec, official_pm25=official)
+        recommendation=rec, pm10=sensor["pm10"], official_pm25=official)
 
 
 # Suggestion S2: Worst Hours
@@ -546,7 +747,8 @@ def visualization_time_series(
         f"""
         SELECT {sensor_period} as week_key,
                MIN(DATE(recorded_at)) as week_start,
-               ROUND(AVG(pm2_5), 2) as avg_pm25
+               ROUND(AVG(pm2_5), 2) as avg_pm25,
+               ROUND(AVG(pm10), 2) as avg_pm10
         FROM pms7003_readings
         WHERE recorded_at >= %s
         GROUP BY week_key
@@ -569,6 +771,21 @@ def visualization_time_series(
         (aligned_since,),
     )
     co_by_week = {str(r["week_key"]): r for r in cursor.fetchall()}
+
+    cursor.execute(
+        f"""
+        SELECT {sensor_period} as week_key,
+               MIN(DATE(recorded_at)) as week_start,
+               ROUND(AVG(precipitation), 2) as avg_precipitation,
+               CAST(ROUND(AVG(weather_code), 0) AS SIGNED) as weather_code
+        FROM openmeteo_readings
+        WHERE recorded_at >= %s
+        GROUP BY week_key
+        ORDER BY week_key
+        """,
+        (aligned_since,),
+    )
+    weather_by_week = {str(r["week_key"]): r for r in cursor.fetchall()}
 
     cursor.execute(
         f"""
@@ -600,6 +817,8 @@ def visualization_time_series(
 
     sensor_weeks = set(pm_by_week) | set(co_by_week)
     all_weeks = sorted(sensor_weeks)
+    pm25_trend = _get_trend([_coerce_float(row.get("avg_pm25")) or 0 for row in pm_by_week.values()])
+    _avg_precipitation, _weather_code, weather_summary, weather_outlook = _weather_period_insight(conn, aligned_since, pm25_trend)
     rows = []
     keyword_fields = [
         "cough", "breathless", "chest_tight", "wheeze", "allergy", "sore_throat",
@@ -610,6 +829,7 @@ def visualization_time_series(
     for week in all_weeks:
         pm = pm_by_week.get(week, {})
         co = co_by_week.get(week, {})
+        weather = weather_by_week.get(week, {})
         trend = trends_by_week.get(week, {})
         keyword_values = [_coerce_float(trend.get(field)) for field in keyword_fields]
         present_keywords = [value for value in keyword_values if value is not None]
@@ -621,9 +841,12 @@ def visualization_time_series(
 
         rows.append({
             "week": week,
-            "week_start": pm.get("week_start") or co.get("week_start") or trend.get("week_start"),
+            "week_start": pm.get("week_start") or co.get("week_start") or trend.get("week_start") or weather.get("week_start"),
             "avg_pm25": _coerce_float(pm.get("avg_pm25")),
+            "avg_pm10": _coerce_float(pm.get("avg_pm10")),
             "avg_co": _coerce_float(co.get("avg_co")),
+            "avg_precipitation": _coerce_float(weather.get("avg_precipitation")),
+            "weather_code": weather.get("weather_code"),
             "cough": _coerce_float(trend.get("cough")),
             "breathless": _coerce_float(trend.get("breathless")),
             "chest_tight": _coerce_float(trend.get("chest_tight")),
@@ -645,6 +868,8 @@ def visualization_time_series(
         visualization="time-series-pollution-vs-illness-keywords",
         period_days=days,
         interval=interval,
+        weather_summary=weather_summary,
+        weather_outlook=weather_outlook,
         count=len(rows),
         data=rows,
     )
@@ -658,7 +883,7 @@ def visualization_time_series(
 )
 def visualization_correlation_scatter(
     days: int = Query(14, ge=1, le=365),
-    pollutant: str = Query("pm25", pattern="^(pm25|co)$"),
+    pollutant: str = Query("pm25", pattern="^(pm25|pm10|co)$"),
     keyword: str = Query("illness_index"),
     interval: str = Query("daily", pattern="^(daily|weekly)$"),
     conn=Depends(get_db),
@@ -666,6 +891,7 @@ def visualization_correlation_scatter(
     """Pair PM2.5 or MQ9 values with Google Trends health searches and test Pearson correlation."""
     pollutant_labels = {
         "pm25": "PM2.5",
+        "pm10": "PM10",
         "co": "CO / MQ9 raw",
     }
     keyword_labels = {
@@ -693,7 +919,7 @@ def visualization_correlation_scatter(
     sensor_period = "DATE(recorded_at)" if interval == "daily" else "YEARWEEK(recorded_at, 3)"
     trend_period = "DATE(timestamp)" if interval == "daily" else "YEARWEEK(timestamp, 3)"
 
-    if pollutant == "pm25":
+    if pollutant in {"pm25", "pm10"}:
         cursor.execute(
             "SELECT MIN(recorded_at) as first_sensor_at FROM pms7003_readings WHERE recorded_at >= %s",
             (since,),
@@ -712,6 +938,19 @@ def visualization_correlation_scatter(
             SELECT {sensor_period} as period,
                    MIN(DATE(recorded_at)) as period_start,
                    ROUND(AVG(pm2_5), 2) as pollutant_value
+            FROM pms7003_readings
+            WHERE recorded_at >= %s
+            GROUP BY period
+            ORDER BY period
+            """,
+            (aligned_since,),
+        )
+    elif pollutant == "pm10":
+        cursor.execute(
+            f"""
+            SELECT {sensor_period} as period,
+                   MIN(DATE(recorded_at)) as period_start,
+                   ROUND(AVG(pm10), 2) as pollutant_value
             FROM pms7003_readings
             WHERE recorded_at >= %s
             GROUP BY period
@@ -983,6 +1222,11 @@ def v5_correlation_matrix(
     pm25_ser = {str(r["period"]): r["v"] for r in cursor.fetchall()}
 
     cursor.execute("""
+        SELECT DATE(recorded_at) as period, ROUND(AVG(pm10), 2) as v
+        FROM pms7003_readings WHERE recorded_at >= %s GROUP BY period""", (since,))
+    pm10_ser = {str(r["period"]): r["v"] for r in cursor.fetchall()}
+
+    cursor.execute("""
         SELECT DATE(recorded_at) as period, ROUND(AVG(mq9_raw), 2) as v
         FROM mq9_readings WHERE recorded_at >= %s GROUP BY period""", (since,))
     co_ser = {str(r["period"]): r["v"] for r in cursor.fetchall()}
@@ -1010,7 +1254,7 @@ def v5_correlation_matrix(
     cursor.close()
 
     all_periods = sorted(
-        set(pm25_ser) | set(co_ser) | set(temp_ser) | set(humid_ser) | set(trends_ser)
+        set(pm25_ser) | set(pm10_ser) | set(co_ser) | set(temp_ser) | set(humid_ser) | set(trends_ser)
     )
 
     # Pre-compute illness_index
@@ -1023,6 +1267,7 @@ def v5_correlation_matrix(
 
     def get_series(key):
         if key == "pm25":    return pm25_ser
+        if key == "pm10":    return pm10_ser
         if key == "co":      return co_ser
         if key == "temp":    return temp_ser
         if key == "humid":   return humid_ser
@@ -1031,6 +1276,7 @@ def v5_correlation_matrix(
 
     SENSOR_VARS = [
         MatrixVariable(key="pm25",  label="PM2.5",    group="sensor"),
+        MatrixVariable(key="pm10",  label="PM10",     group="sensor"),
         MatrixVariable(key="co",    label="CO / MQ9", group="sensor"),
         MatrixVariable(key="temp",  label="Temp",     group="sensor"),
         MatrixVariable(key="humid", label="Humid",    group="sensor"),
@@ -1080,12 +1326,8 @@ def v5_correlation_matrix(
 def live_dashboard(hours: int = Query(24, ge=6, le=168), conn=Depends(get_db)):
     sensor = _latest_combined(conn)
     official = _get_official_pm25(conn)
-    pm_cursor = conn.cursor(dictionary=True)
-    pm_cursor.execute("SELECT pm10 FROM pms7003_readings ORDER BY recorded_at DESC LIMIT 1")
-    latest_pm_row = pm_cursor.fetchone()
-    pm_cursor.close()
     score, level, main, contribs, rec = _calc_risk(
-        sensor["pm2_5"], sensor["mq9_raw"], sensor["temperature"], sensor["humidity"], official
+        sensor["pm2_5"], sensor["pm10"], sensor["mq9_raw"], sensor["temperature"], sensor["humidity"], official
     )
 
     safety = SafetyResponse(
@@ -1100,10 +1342,12 @@ def live_dashboard(hours: int = Query(24, ge=6, le=168), conn=Depends(get_db)):
     since = datetime.now() - timedelta(hours=hours)
 
     cursor.execute(
-        "SELECT pm2_5 FROM pms7003_readings WHERE recorded_at >= %s ORDER BY recorded_at",
+        "SELECT pm2_5, pm10 FROM pms7003_readings WHERE recorded_at >= %s ORDER BY recorded_at",
         (since,),
     )
-    pm_vals = [_coerce_float(r["pm2_5"]) or 0 for r in cursor.fetchall()]
+    pm_rows = cursor.fetchall()
+    pm_vals = [_coerce_float(r["pm2_5"]) or 0 for r in pm_rows]
+    pm10_vals = [_coerce_float(r["pm10"]) or 0 for r in pm_rows]
 
     cursor.execute(
         "SELECT mq9_raw FROM mq9_readings WHERE recorded_at >= %s ORDER BY recorded_at",
@@ -1119,18 +1363,22 @@ def live_dashboard(hours: int = Query(24, ge=6, le=168), conn=Depends(get_db)):
     temp_vals = [_coerce_float(r["temperature"]) or 0 for r in ky_rows]
     hum_vals = [_coerce_float(r["humidity"]) or 0 for r in ky_rows]
 
-    pt, ct = _get_trend(pm_vals), _get_trend(mq_vals)
+    pt, p10t, ct = _get_trend(pm_vals), _get_trend(pm10_vals), _get_trend(mq_vals)
     tt, ht = _get_trend(temp_vals), _get_trend(hum_vals)
-    overall = (TrendDirection.worsening if "worsening" in (pt, ct)
-               else TrendDirection.improving if "improving" in (pt, ct)
+    avg_precipitation, weather_code, weather_summary, weather_outlook = _weather_period_insight(conn, since, pt)
+    overall = (TrendDirection.worsening if "worsening" in (pt, p10t, ct)
+               else TrendDirection.improving if "improving" in (pt, p10t, ct)
                else TrendDirection.stable)
     trend = TrendResponse(
         direction=overall,
         pm25_trend=pt,
+        pm10_trend=p10t,
         co_trend=ct,
         temperature_trend=tt,
         humidity_trend=ht,
-        summary=f"Air quality is {overall.value} over the last {hours} hours.",
+        summary=f"PM2.5 and PM10 are {overall.value} over the last {hours} hours.",
+        weather_summary=weather_summary,
+        weather_outlook=weather_outlook,
     )
 
     cursor.execute(
@@ -1188,7 +1436,7 @@ def live_dashboard(hours: int = Query(24, ge=6, le=168), conn=Depends(get_db)):
         snapshot=LiveSnapshotResponse(
             recorded_at=sensor["recorded_at"],
             pm2_5=sensor["pm2_5"],
-            pm10=_coerce_float(latest_pm_row["pm10"]) if latest_pm_row else None,
+            pm10=sensor["pm10"],
             mq9_raw=sensor["mq9_raw"],
             temperature=sensor["temperature"],
             humidity=sensor["humidity"],
@@ -1397,10 +1645,11 @@ def statistic_2_history(
 
     cursor.execute(f"""
         SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
-               ROUND(AVG(pm2_5), 2) as avg_pm25
+               ROUND(AVG(pm2_5), 2) as avg_pm25,
+               ROUND(AVG(pm10), 2) as avg_pm10
         FROM pms7003_readings WHERE recorded_at >= %s
         GROUP BY period ORDER BY period""", (since,))
-    pm_data = {r["period"]: r["avg_pm25"] for r in cursor.fetchall()}
+    pm_data = {r["period"]: r for r in cursor.fetchall()}
 
     cursor.execute(f"""
         SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
@@ -1416,20 +1665,45 @@ def statistic_2_history(
         FROM mq9_readings WHERE recorded_at >= %s
         GROUP BY period ORDER BY period""", (since,))
     mq_data = {r["period"]: r["avg_mq9"] for r in cursor.fetchall()}
+
+    cursor.execute(f"""
+        SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
+               ROUND(AVG(precipitation), 2) as avg_precipitation,
+               CAST(ROUND(AVG(weather_code), 0) AS SIGNED) as weather_code
+        FROM openmeteo_readings WHERE recorded_at >= %s
+        GROUP BY period ORDER BY period""", (since,))
+    weather_data = {r["period"]: r for r in cursor.fetchall()}
     cursor.close()
 
-    all_periods = sorted(set(pm_data) | set(ky_data) | set(mq_data))
+    pm25_vals = [_coerce_float(row.get("avg_pm25")) or 0 for row in pm_data.values()]
+    pm25_trend = _get_trend(pm25_vals)
+    avg_precipitation, weather_code, weather_summary, weather_outlook = _weather_period_insight(conn, since, pm25_trend)
+
+    all_periods = sorted(set(pm_data) | set(ky_data) | set(mq_data) | set(weather_data))
     data = []
     for p in all_periods:
         ky = ky_data.get(p, {})
+        pm = pm_data.get(p, {})
+        weather = weather_data.get(p, {})
         data.append({
             "period": p,
-            "avg_pm25": pm_data.get(p),
+            "avg_pm25": pm.get("avg_pm25"),
+            "avg_pm10": pm.get("avg_pm10"),
             "avg_mq9_raw": mq_data.get(p),
             "avg_temperature": ky.get("avg_temperature"),
             "avg_humidity": ky.get("avg_humidity"),
+            "avg_precipitation": weather.get("avg_precipitation"),
+            "weather_code": weather.get("weather_code"),
         })
-    return {"interval": interval, "count": len(data), "data": data}
+    return {
+        "interval": interval,
+        "count": len(data),
+        "weather_summary": weather_summary,
+        "weather_outlook": weather_outlook,
+        "latest_weather_code": weather_code,
+        "avg_precipitation": avg_precipitation,
+        "data": data,
+    }
 
 
 # Statistic 3: Google Trends keyword search trends by date.
@@ -1582,6 +1856,251 @@ def statistic_4_wind_speed(
         data=data,
     )
 
+
+@router.get(
+    "/forecast/pm25",
+    response_model=PM25ForecastResponse,
+    summary="PM2.5 forecast for the next 6 to 12 hours using current trend and weather context",
+)
+def forecast_pm25(
+    lookahead_hours: int = Query(12, ge=6, le=12),
+    base_hours: int = Query(12, ge=6, le=24),
+    conn=Depends(get_db),
+):
+    sensor = _latest_combined(conn)
+    since = datetime.now() - timedelta(hours=base_hours)
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT pm2_5, pm10, recorded_at
+        FROM pms7003_readings
+        WHERE recorded_at >= %s
+        ORDER BY recorded_at
+        """,
+        (since,),
+    )
+    pm_rows = cursor.fetchall()
+    cursor.execute(
+        """
+        SELECT precipitation, weather_code, wind_speed_10m
+        FROM openmeteo_readings
+        WHERE recorded_at >= %s
+        ORDER BY recorded_at
+        """,
+        (since,),
+    )
+    weather_rows = cursor.fetchall()
+    cursor.close()
+
+    pm25_values = [_coerce_float(row.get("pm2_5")) or 0 for row in pm_rows]
+    pm25_trend = _get_trend(pm25_values)
+    sample_count = len(pm25_values)
+    trend_delta_total = _trend_slope(pm25_values)
+    hourly_trend_delta = (trend_delta_total / max(sample_count - 1, 1)) if sample_count > 1 else 0.0
+
+    precip_values = [_coerce_float(row.get("precipitation")) for row in weather_rows if row.get("precipitation") is not None]
+    wind_values = [_coerce_float(row.get("wind_speed_10m")) for row in weather_rows if row.get("wind_speed_10m") is not None]
+    avg_precipitation = round(sum(precip_values) / len(precip_values), 2) if precip_values else None
+    avg_wind_speed = round(sum(wind_values) / len(wind_values), 2) if wind_values else None
+    weather_code = _dominant_weather_code([row.get("weather_code") for row in weather_rows])
+    weather_adjustment_per_window = _forecast_weather_adjustment(avg_precipitation, weather_code, avg_wind_speed)
+    summary, weather_outlook = _build_weather_pm25_insight(pm25_trend, avg_precipitation, weather_code)
+    confidence = _forecast_confidence(sample_count, avg_wind_speed, avg_precipitation)
+
+    points = []
+    for hours_ahead in (6, lookahead_hours):
+        trend_delta = round(hourly_trend_delta * hours_ahead, 2)
+        weather_adjustment = round(weather_adjustment_per_window * (hours_ahead / 6), 2)
+        predicted = max(round(sensor["pm2_5"] + trend_delta + weather_adjustment, 1), 0.0)
+        if predicted <= 15:
+            outlook = "Low PM2.5 range if current trend and weather continue."
+        elif predicted <= 37.5:
+            outlook = "Moderate PM2.5 range; sensitive groups should keep watching conditions."
+        else:
+            outlook = "Elevated PM2.5 risk; reduce exposure if this trajectory holds."
+        points.append(PM25ForecastPoint(
+            hours_ahead=hours_ahead,
+            predicted_pm25=predicted,
+            trend_delta=trend_delta,
+            weather_adjustment=weather_adjustment,
+            dominant_weather_code=weather_code,
+            avg_precipitation=avg_precipitation,
+            avg_wind_speed=avg_wind_speed,
+            outlook=outlook,
+        ))
+
+    return PM25ForecastResponse(
+        forecast="pm25-next-6-12h",
+        generated_at=datetime.now(),
+        based_on_hours=base_hours,
+        current_pm25=round(sensor["pm2_5"], 1),
+        current_pm10=round(sensor["pm10"], 1),
+        pm25_trend=pm25_trend,
+        dominant_weather_code=weather_code,
+        avg_precipitation=avg_precipitation,
+        avg_wind_speed=avg_wind_speed,
+        confidence=confidence,
+        summary=summary if weather_outlook == summary else f"{summary} {weather_outlook}",
+        points=points,
+    )
+
+
+@router.get(
+    "/forecast",
+    response_model=ForecastResponse,
+    summary="Short-horizon forecast for PM2.5, temperature, or humidity using recent trend and weather context",
+)
+def forecast_metric(
+    metric: str = Query("pm25", pattern="^(pm25|temperature|humidity)$"),
+    lookahead_hours: int = Query(12, ge=6, le=12),
+    base_hours: int = Query(12, ge=6, le=24),
+    conn=Depends(get_db),
+):
+    sensor = _latest_combined(conn)
+    since = datetime.now() - timedelta(hours=base_hours)
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT pm2_5, pm10, recorded_at
+        FROM pms7003_readings
+        WHERE recorded_at >= %s
+        ORDER BY recorded_at
+        """,
+        (since,),
+    )
+    pm_rows = cursor.fetchall()
+    cursor.execute(
+        """
+        SELECT temperature, humidity, recorded_at
+        FROM ky015_readings
+        WHERE recorded_at >= %s
+        ORDER BY recorded_at
+        """,
+        (since,),
+    )
+    ky_rows = cursor.fetchall()
+    cursor.execute(
+        """
+        SELECT precipitation, weather_code, wind_speed_10m
+        FROM openmeteo_readings
+        WHERE recorded_at >= %s
+        ORDER BY recorded_at
+        """,
+        (since,),
+    )
+    weather_rows = cursor.fetchall()
+    cursor.close()
+
+    precip_values = [_coerce_float(row.get("precipitation")) for row in weather_rows if row.get("precipitation") is not None]
+    wind_values = [_coerce_float(row.get("wind_speed_10m")) for row in weather_rows if row.get("wind_speed_10m") is not None]
+    avg_precipitation = round(sum(precip_values) / len(precip_values), 2) if precip_values else None
+    avg_wind_speed = round(sum(wind_values) / len(wind_values), 2) if wind_values else None
+    weather_code = _dominant_weather_code([row.get("weather_code") for row in weather_rows])
+
+    metric_config = {
+        "pm25": {
+            "label": "PM2.5",
+            "unit": "ug/m3",
+            "current_value": sensor["pm2_5"],
+            "aux_value": sensor["pm10"],
+            "values": [_coerce_float(row.get("pm2_5")) or 0 for row in pm_rows],
+        },
+        "temperature": {
+            "label": "Temperature",
+            "unit": "C",
+            "current_value": sensor["temperature"],
+            "aux_value": sensor["humidity"],
+            "values": [_coerce_float(row.get("temperature")) or 0 for row in ky_rows],
+        },
+        "humidity": {
+            "label": "Humidity",
+            "unit": "%",
+            "current_value": sensor["humidity"],
+            "aux_value": sensor["temperature"],
+            "values": [_coerce_float(row.get("humidity")) or 0 for row in ky_rows],
+        },
+    }
+    config = metric_config[metric]
+    values = config["values"]
+    trend = _get_trend(values)
+    sample_count = len(values)
+    trend_delta_total = _trend_slope(values)
+    hourly_trend_delta = (trend_delta_total / max(sample_count - 1, 1)) if sample_count > 1 else 0.0
+
+    if metric == "pm25":
+        weather_adjustment_per_window = _forecast_weather_adjustment(avg_precipitation, weather_code, avg_wind_speed)
+        summary, weather_outlook = _build_weather_pm25_insight(trend, avg_precipitation, weather_code)
+        summary = summary if weather_outlook == summary else f"{summary} {weather_outlook}"
+    elif metric == "temperature":
+        weather_adjustment_per_window = 0.0
+        if avg_precipitation is not None:
+            weather_adjustment_per_window -= min(avg_precipitation * 1.2, 3.0)
+        if weather_code in RAINY_CODES:
+            weather_adjustment_per_window -= 0.8
+        if avg_wind_speed is not None and avg_wind_speed >= 10:
+            weather_adjustment_per_window -= 0.6
+        summary = _generic_weather_summary(config["label"], trend, avg_precipitation, weather_code, avg_wind_speed)
+    else:
+        weather_adjustment_per_window = 0.0
+        if avg_precipitation is not None:
+            weather_adjustment_per_window += min(avg_precipitation * 4.0, 10.0)
+        if weather_code in RAINY_CODES:
+            weather_adjustment_per_window += 2.0
+        if avg_wind_speed is not None and avg_wind_speed >= 10:
+            weather_adjustment_per_window -= 1.5
+        summary = _generic_weather_summary(config["label"], trend, avg_precipitation, weather_code, avg_wind_speed)
+
+    confidence = _forecast_confidence(sample_count, avg_wind_speed, avg_precipitation)
+
+    points = []
+    for hours_ahead in (6, lookahead_hours):
+        trend_delta = round(hourly_trend_delta * hours_ahead, 2)
+        weather_adjustment = round(weather_adjustment_per_window * (hours_ahead / 6), 2)
+        predicted = round(config["current_value"] + trend_delta + weather_adjustment, 1)
+        if metric in {"pm25", "humidity"}:
+            predicted = max(predicted, 0.0)
+
+        if metric == "pm25":
+            if predicted <= 15:
+                outlook = "Low PM2.5 range if this trajectory holds."
+            elif predicted <= 37.5:
+                outlook = "Moderate PM2.5 range; sensitive groups should keep monitoring."
+            else:
+                outlook = "Elevated PM2.5 risk remains likely in this horizon."
+        elif metric == "temperature":
+            outlook = "Warmer conditions likely." if predicted >= config["current_value"] else "Slight cooling likely."
+        else:
+            outlook = "Humidity may stay sticky." if predicted >= config["current_value"] else "Humidity may ease slightly."
+
+        points.append(ForecastPoint(
+            hours_ahead=hours_ahead,
+            predicted_value=predicted,
+            trend_delta=trend_delta,
+            weather_adjustment=weather_adjustment,
+            dominant_weather_code=weather_code,
+            avg_precipitation=avg_precipitation,
+            avg_wind_speed=avg_wind_speed,
+            outlook=outlook,
+        ))
+
+    return ForecastResponse(
+        forecast=f"{metric}-next-6-12h",
+        metric=metric,
+        label=config["label"],
+        unit=config["unit"],
+        generated_at=datetime.now(),
+        based_on_hours=base_hours,
+        current_value=round(config["current_value"], 1),
+        current_aux_value=round(config["aux_value"], 1) if config["aux_value"] is not None else None,
+        trend=trend,
+        dominant_weather_code=weather_code,
+        avg_precipitation=avg_precipitation,
+        avg_wind_speed=avg_wind_speed,
+        confidence=confidence,
+        summary=summary,
+        points=points,
+    )
+
 # API AI: Gemini chat assistant for PM2.5, cough, headache, and first-care guidance.
 @router.post("/ai-chat", response_model=AIChatResponse, summary="AirHealth AI chat powered by Gemini")
 def airhealth_ai_chat(payload: AIChatRequest, conn=Depends(get_db)):
@@ -1603,6 +2122,7 @@ def airhealth_ai_chat(payload: AIChatRequest, conn=Depends(get_db)):
     context_lines = [
         "Live AirHealth sensor context:",
         f"- PM2.5: {snapshot.get('pm2_5', 'unknown')} ug/m3",
+        f"- PM10: {snapshot.get('pm10', 'unknown')} ug/m3",
         f"- MQ-9 raw: {snapshot.get('mq9_raw', 'unknown')}",
         f"- Temperature: {snapshot.get('temperature', 'unknown')} C",
         f"- Humidity: {snapshot.get('humidity', 'unknown')}%",

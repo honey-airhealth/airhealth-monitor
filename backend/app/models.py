@@ -47,6 +47,7 @@ class HealthRiskResponse(BaseModel):
     main_contributor: str
     contributions: dict
     recommendation: str
+    pm10: Optional[float] = None
     official_pm25: Optional[float] = None
 
 
@@ -61,10 +62,13 @@ class WorstHoursResponse(BaseModel):
 class TrendResponse(BaseModel):
     direction: TrendDirection
     pm25_trend: TrendDirection
+    pm10_trend: TrendDirection
     co_trend: TrendDirection
     temperature_trend: TrendDirection
     humidity_trend: TrendDirection
     summary: str
+    weather_summary: Optional[str] = None
+    weather_outlook: Optional[str] = None
 
 
 class SafetyResponse(BaseModel):
@@ -133,7 +137,10 @@ class VisualizationTimeSeriesPoint(BaseModel):
     week: str
     week_start: Optional[date] = None
     avg_pm25: Optional[float] = None
+    avg_pm10: Optional[float] = None
     avg_co: Optional[float] = None
+    avg_precipitation: Optional[float] = None
+    weather_code: Optional[int] = None
     cough: Optional[float] = None
     breathless: Optional[float] = None
     chest_tight: Optional[float] = None
@@ -155,6 +162,8 @@ class VisualizationTimeSeriesResponse(BaseModel):
     visualization: str
     period_days: int
     interval: str
+    weather_summary: Optional[str] = None
+    weather_outlook: Optional[str] = None
     count: int
     data: list[VisualizationTimeSeriesPoint]
 
@@ -182,6 +191,61 @@ class VisualizationCorrelationScatterResponse(BaseModel):
     interpretation: str
     count: int
     data: list[VisualizationCorrelationScatterPoint]
+
+
+class PM25ForecastPoint(BaseModel):
+    hours_ahead: int
+    predicted_pm25: float = Field(..., ge=0)
+    trend_delta: float
+    weather_adjustment: float
+    dominant_weather_code: Optional[int] = None
+    avg_precipitation: Optional[float] = None
+    avg_wind_speed: Optional[float] = None
+    outlook: str
+
+
+class PM25ForecastResponse(BaseModel):
+    forecast: str
+    generated_at: datetime
+    based_on_hours: int
+    current_pm25: float
+    current_pm10: Optional[float] = None
+    pm25_trend: TrendDirection
+    dominant_weather_code: Optional[int] = None
+    avg_precipitation: Optional[float] = None
+    avg_wind_speed: Optional[float] = None
+    confidence: str
+    summary: str
+    points: list[PM25ForecastPoint]
+
+
+class ForecastPoint(BaseModel):
+    hours_ahead: int
+    predicted_value: float
+    trend_delta: float
+    weather_adjustment: float
+    dominant_weather_code: Optional[int] = None
+    avg_precipitation: Optional[float] = None
+    avg_wind_speed: Optional[float] = None
+    outlook: str
+
+
+class ForecastResponse(BaseModel):
+    forecast: str
+    metric: str
+    label: str
+    unit: str
+    generated_at: datetime
+    based_on_hours: int
+    current_value: float
+    current_aux_value: Optional[float] = None
+    trend: TrendDirection
+    dominant_weather_code: Optional[int] = None
+    avg_precipitation: Optional[float] = None
+    avg_wind_speed: Optional[float] = None
+    confidence: str
+    summary: str
+    points: list[ForecastPoint]
 
 
 class HourlyHeatmapCell(BaseModel):

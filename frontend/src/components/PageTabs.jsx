@@ -3,6 +3,7 @@ const tabs = [
   { href: "/dashboard", label: "Live", key: "dashboard", widthClass: "w-[92px]" },
   { href: "/statistic", label: "statistic", key: "statistic", widthClass: "w-[112px]" },
   { href: "/visualization", label: "analytic", key: "analytic", widthClass: "w-[112px]" },
+  { href: "/forecast", label: "forecast", key: "forecast", widthClass: "w-[112px]" },
   { href: "/suggestion", label: "suggestion", key: "suggestion", widthClass: "w-[126px]" },
   { href: "/ai", label: "AI", key: "ai", widthClass: "w-[74px]" },
 ];

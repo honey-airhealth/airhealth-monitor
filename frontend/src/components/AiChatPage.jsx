@@ -1,22 +1,10 @@
 import React from "react";
 import { Bot, Brain, Headphones, HeartPulse, MessageCircle, Send, ShieldAlert, Wind } from "lucide-react";
 
+import { resolveApiBaseUrl } from "../api/base";
 import DashboardHero from "./DashboardHero.jsx";
 
-const resolveApiBase = () => {
-  if (typeof window === "undefined") return "";
-  const configured = import.meta.env.VITE_API_BASE_URL;
-  if (configured) return configured.replace(/\/$/, "");
-  const legacy = import.meta.env.VITE_API_BASE;
-  if (legacy) return legacy.replace(/\/api\/v1\/integration$/, "");
-  const { protocol, hostname } = window.location;
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return `${protocol}//${hostname}:8000`;
-  }
-  return "";
-};
-
-const API_BASE = resolveApiBase();
+const API_BASE = resolveApiBaseUrl();
 
 const quickQuestions = [
   "PM2.5 is very high, but I need to go outside. What should I do?",

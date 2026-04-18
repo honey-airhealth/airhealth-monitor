@@ -62,3 +62,10 @@ def test_v2_interpretation_not_empty(client):
     body = client.get(BASE).json()
     assert isinstance(body["interpretation"], str)
     assert len(body["interpretation"]) > 0
+
+
+def test_v2_pm10_supported(client):
+    _setup(client)
+    body = client.get(BASE, params={"pollutant": "pm10", "keyword": "headache"}).json()
+    assert body["pollutant"] == "pm10"
+    assert body["pollutant_label"] == "PM10"

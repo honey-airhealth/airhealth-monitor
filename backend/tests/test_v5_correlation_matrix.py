@@ -20,7 +20,7 @@ TREND_ROWS = [
 ]
 
 def _setup(client):
-    conn = make_conn([SENSOR_ROWS, SENSOR_ROWS, KY_ROWS, TREND_ROWS])
+    conn = make_conn([SENSOR_ROWS, SENSOR_ROWS, SENSOR_ROWS, KY_ROWS, TREND_ROWS])
     override_db(conn)
     return client
 
@@ -46,11 +46,11 @@ def test_v5_identifier(client):
     assert client.get(BASE).json()["visualization"] == "correlation-matrix"
 
 
-# TC-V5-04: Always has 4 sensor variables (pm25, co, temp, humid)
+# TC-V5-04: Always has sensor variables including pm10
 def test_v5_sensor_variables(client):
     _setup(client)
     keys = [v["key"] for v in client.get(BASE).json()["variables"]]
-    for sensor in ("pm25", "co", "temp", "humid"):
+    for sensor in ("pm25", "pm10", "co", "temp", "humid"):
         assert sensor in keys
 
 

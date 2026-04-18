@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Wind, Waves } from 'lucide-react';
 import PageTabs from './PageTabs.jsx';
+import { resolveIntegrationApiBase } from '../api/base';
 
 const featurePills = [
   'Live sensor streams',
@@ -8,7 +9,7 @@ const featurePills = [
   'Readable public insights',
 ];
 
-const API_BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:8000/api/v1/integration';
+const API_BASE = resolveIntegrationApiBase();
 
 function aqiLabel(pm25: number | null): string {
   if (pm25 == null) return '—';

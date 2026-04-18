@@ -5,6 +5,7 @@ import { DataSources } from "./components/DataSources";
 import { ApiCapabilities } from "./components/ApiCapabilities";
 import ApiDashboardPage from "./components/ApiDashboardPage.jsx";
 import VisualizationPage from "./components/VisualizationPage.jsx";
+import ForecastPage from "./components/ForecastPage.jsx";
 import AiChatPage from "./components/AiChatPage.jsx";
 import { Team } from "./components/Team";
 import { Footer } from "./components/Footer";
@@ -42,6 +43,10 @@ export default function App() {
 
   if (pathname === "/statistic" || hash === "#/statistic") {
     return <VisualizationPage variant="statistic" />;
+  }
+
+  if (pathname === "/forecast" || hash === "#/forecast") {
+    return <ForecastPage />;
   }
 
   if (pathname === "/visualization" || hash === "#/visualization") {

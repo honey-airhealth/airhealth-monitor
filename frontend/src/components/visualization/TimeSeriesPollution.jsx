@@ -6,6 +6,7 @@ import { ErrorBox, Loader, MetricCard, SectionTitle } from '../api_dashboard/ui'
 
 const pollutants = {
   pm25: { key: 'avg_pm25', label: 'PM2.5', unit: 'ug/m3', color: '#378ADD' },
+  pm10: { key: 'avg_pm10', label: 'PM10', unit: 'ug/m3', color: '#7C3AED' },
   co: { key: 'avg_co', label: 'CO / MQ9', unit: 'raw', color: '#E24B4A' },
 }
 
@@ -234,6 +235,25 @@ export default function TimeSeriesPollution() {
 
       {chartData.length > 0 && (
         <>
+          {(data?.weather_summary || data?.weather_outlook) && (
+            <div style={{
+              marginBottom: 16,
+              borderRadius: 12,
+              border: '1px solid rgba(203, 213, 225, 0.9)',
+              background: 'rgba(248, 250, 252, 0.95)',
+              padding: '12px 14px',
+              color: 'var(--t2)',
+              fontSize: 12,
+              lineHeight: 1.65,
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--t3)', marginBottom: 6 }}>
+                PM2.5 weather insight
+              </div>
+              {data?.weather_summary ? <div>{data.weather_summary}</div> : null}
+              {data?.weather_outlook ? <div style={{ marginTop: 6, color: 'var(--t1)', fontWeight: 700 }}>{data.weather_outlook}</div> : null}
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 16 }}>
             <MetricCard label={`avg ${pollutantConfig.label}`} value={avgPollutant} unit={pollutantConfig.unit} color={pollutantConfig.color} />
             <MetricCard label={`avg ${keywordConfig.label}`} value={avgKeyword} unit="trend" color={keywordConfig.color} />

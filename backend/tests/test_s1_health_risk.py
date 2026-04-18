@@ -30,7 +30,7 @@ def test_q1_default(client):
 def test_q1_schema(client):
     _setup(client)
     body = client.get(BASE).json()
-    for f in ("timestamp", "risk_score", "risk_level", "main_contributor", "contributions", "recommendation"):
+    for f in ("timestamp", "risk_score", "risk_level", "main_contributor", "contributions", "recommendation", "pm10"):
         assert f in body, f"missing: {f}"
 
 

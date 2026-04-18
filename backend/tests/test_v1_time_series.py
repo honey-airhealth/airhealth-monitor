@@ -5,7 +5,9 @@ from tests.conftest import client, override_db, make_conn  # noqa: F401
 BASE = "/api/v1/integration/visualization/time-series"
 
 PM_ROW = {"week_key": "2026-04-10", "week_start": "2026-04-10", "avg_pm25": 36.75}
+PM_WEATHER_ROW = {"week_key": "2026-04-10", "week_start": "2026-04-10", "avg_pm25": 36.75, "avg_pm10": 58.4}
 CO_ROW = {"week_key": "2026-04-10", "week_start": "2026-04-10", "avg_co": 375.09}
+WEATHER_ROW = {"week_key": "2026-04-10", "week_start": "2026-04-10", "avg_precipitation": 0.45, "weather_code": 61}
 TREND_ROW = {
     "week_key": "2026-04-10", "week_start": "2026-04-10",
     "cough": 77.1, "breathless": 0.0, "chest_tight": 0.0, "wheeze": 0.2,
@@ -17,7 +19,7 @@ FIRST_ROW = {"first_sensor_at": "2026-04-10"}
 
 def _setup(client):
     conn = make_conn(
-        fetchall_returns=[[PM_ROW], [CO_ROW], [TREND_ROW]],
+        fetchall_returns=[[PM_WEATHER_ROW], [CO_ROW], [WEATHER_ROW], [TREND_ROW], [{"precipitation": 0.45, "weather_code": 61}]],
         fetchone_returns=[FIRST_ROW],
     )
     override_db(conn)
@@ -61,3 +63,11 @@ def test_v1_data_has_illness_index(client):
     assert len(data) == 1
     assert "illness_index" in data[0]
     assert data[0]["illness_index"] is not None
+
+
+def test_v1_data_has_pm10_and_weather_fields(client):
+    _setup(client)
+    row = client.get(BASE).json()["data"][0]
+    assert row["avg_pm10"] == PM_WEATHER_ROW["avg_pm10"]
+    assert row["avg_precipitation"] == WEATHER_ROW["avg_precipitation"]
+    assert row["weather_code"] == WEATHER_ROW["weather_code"]

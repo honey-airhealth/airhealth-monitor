@@ -4,12 +4,14 @@ from tests.conftest import client, override_db, make_conn  # noqa: F401
 
 BASE = "/api/v1/integration/history"
 
-PM_ROWS  = [{"period": f"2026-04-{10+i:02d} 00:00:00", "avg_pm25": 30.0 + i} for i in range(7)]
+PM_ROWS  = [{"period": f"2026-04-{10+i:02d} 00:00:00", "avg_pm25": 30.0 + i, "avg_pm10": 48.0 + i} for i in range(7)]
 KY_ROWS  = [{"period": f"2026-04-{10+i:02d} 00:00:00", "avg_temperature": 28.0 + i * 0.2, "avg_humidity": 60.0 + i} for i in range(7)]
 MQ_ROWS  = [{"period": f"2026-04-{10+i:02d} 00:00:00", "avg_mq9": 300.0 + i * 5} for i in range(7)]
+WEATHER_ROWS = [{"period": f"2026-04-{10+i:02d} 00:00:00", "avg_precipitation": 0.3, "weather_code": 61} for i in range(7)]
+WEATHER_SERIES_ROWS = [{"precipitation": 0.3, "weather_code": 61} for _ in range(7)]
 
 def _setup(client):
-    conn = make_conn([PM_ROWS, KY_ROWS, MQ_ROWS])
+    conn = make_conn([PM_ROWS, KY_ROWS, MQ_ROWS, WEATHER_ROWS, WEATHER_SERIES_ROWS])
     override_db(conn)
     return client
 
@@ -50,3 +52,11 @@ def test_statistic2_data_has_period(client):
     assert len(body["data"]) > 0
     for d in body["data"]:
         assert "period" in d
+
+
+def test_statistic2_data_has_pm10_and_weather_fields(client):
+    _setup(client)
+    row = client.get(BASE).json()["data"][0]
+    assert "avg_pm10" in row
+    assert "avg_precipitation" in row
+    assert "weather_code" in row

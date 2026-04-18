@@ -1,23 +1,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Activity, AlertTriangle, CloudSun, Gauge, RefreshCcw, Thermometer, Waves, Wind } from "lucide-react";
+import { getPM25Forecast } from "./api";
 
+import { resolveApiBaseUrl } from "./api/base";
 import { Card, CardContent } from "./components/ui/card";
 import DashboardHero from "./components/DashboardHero.jsx";
 
 const REFRESH_MS = 60_000;
-
-const resolveApiBase = () => {
-  if (typeof window === "undefined") return "";
-  const configured = import.meta.env.VITE_API_BASE_URL;
-  if (configured) return configured.replace(/\/$/, "");
-  const { protocol, hostname } = window.location;
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return `${protocol}//${hostname}:8000`;
-  }
-  return "";
-};
-
-const API_BASE = resolveApiBase();
+const API_BASE = resolveApiBaseUrl();
 const SOURCE_OPTIONS = ["PMS7003", "KY-015", "MQ-9", "Open-Meteo", "Official PM2.5", "Google Trends"];
 const DASHBOARD_RETRY_DELAYS = [0, 600, 1400];
 
@@ -122,6 +112,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [forecast, setForecast] = useState(null);
+  const [forecastError, setForecastError] = useState("");
   const [reloadToken, setReloadToken] = useState(0);
   const [selectedSource, setSelectedSource] = useState("PMS7003");
   const [tableData, setTableData] = useState(null);
@@ -155,6 +147,15 @@ export default function Dashboard() {
         if (!active) return;
         setDashboard(payload);
         setError("");
+        try {
+          const forecastResponse = await getPM25Forecast(12, 12);
+          if (!active) return;
+          setForecast(forecastResponse.data);
+          setForecastError("");
+        } catch (forecastErr) {
+          if (!active) return;
+          setForecastError(forecastErr?.response?.data?.detail || forecastErr?.message || "Unable to load forecast");
+        }
       } catch (err) {
         if (!active) return;
         if (!latestDashboardRef.current) {
@@ -306,17 +307,68 @@ export default function Dashboard() {
                   </div>
                 ) : null}
 
-                <div className="mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+                <div className="mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-5">
                   <MetricCard icon={Wind} label="PM2.5" value={snapshot?.pm2_5?.toFixed(1) || "--"} unit="ug/m3" accent="from-cyan-500 to-blue-500" />
+                  <MetricCard icon={Wind} label="PM10" value={snapshot?.pm10?.toFixed(1) || "--"} unit="ug/m3" accent="from-violet-500 to-indigo-500" />
                   <MetricCard icon={AlertTriangle} label="CO / MQ9" value={snapshot?.mq9_raw?.toFixed(0) || "--"} unit="raw" accent="from-blue-500 to-indigo-500" />
                   <MetricCard icon={Thermometer} label="Temperature" value={snapshot?.temperature?.toFixed(1) || "--"} unit="°C" accent="from-orange-400 to-rose-500" />
                   <MetricCard icon={Waves} label="Humidity" value={snapshot?.humidity?.toFixed(1) || "--"} unit="%" accent="from-emerald-400 to-cyan-500" />
                 </div>
+
+                {dashboard?.trend?.weather_summary || dashboard?.trend?.weather_outlook ? (
+                  <div className="mt-4 rounded-[1.25rem] border border-slate-200/80 bg-white/72 px-4 py-3 text-sm leading-6 text-slate-600">
+                    <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Weather insight</div>
+                    {dashboard?.trend?.weather_summary ? <div className="mt-2">{dashboard.trend.weather_summary}</div> : null}
+                    {dashboard?.trend?.weather_outlook ? <div className="mt-1.5 font-semibold text-slate-800">{dashboard.trend.weather_outlook}</div> : null}
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
           </div>
 
           <div className="grid gap-4">
+            <Card className="border-white/70 bg-white/84">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-[0.28em] text-slate-400">Forecast</div>
+                    <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-slate-950">PM2.5 next 6-12h</h2>
+                  </div>
+                  <div className="flex size-10 items-center justify-center rounded-[1rem] bg-violet-50 text-violet-500">
+                    <Wind className="size-5" />
+                  </div>
+                </div>
+                {forecastError ? (
+                  <div className="mt-4 text-sm font-semibold text-rose-600">{forecastError}</div>
+                ) : forecast ? (
+                  <>
+                    <div className="mt-4 grid gap-3">
+                      {forecast.points?.map((point) => (
+                        <div key={point.hours_ahead} className="rounded-[1.2rem] border border-slate-100 bg-slate-50/70 px-4 py-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-sm font-black tracking-[-0.03em] text-slate-900">+{point.hours_ahead}h</div>
+                            <div className="text-lg font-black tracking-[-0.04em] text-slate-950">{point.predicted_pm25.toFixed(1)} <span className="text-xs font-bold text-slate-400">ug/m3</span></div>
+                          </div>
+                          <div className="mt-1 text-xs font-medium text-slate-500">
+                            Trend {point.trend_delta >= 0 ? "+" : ""}{point.trend_delta} · Weather {point.weather_adjustment >= 0 ? "+" : ""}{point.weather_adjustment}
+                          </div>
+                          <div className="mt-2 text-xs leading-5 text-slate-600">{point.outlook}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 text-xs leading-5 text-slate-500">
+                      {forecast.summary}
+                    </div>
+                    <div className="mt-2 text-[11px] font-bold uppercase tracking-[0.22em] text-slate-400">
+                      Confidence: {forecast.confidence}
+                    </div>
+                  </>
+                ) : (
+                  <div className="mt-4 text-sm font-semibold text-slate-500">Loading forecast...</div>
+                )}
+              </CardContent>
+            </Card>
+
             <Card className="border-white/70 bg-white/84">
               <CardContent className="p-5">
                 <div className="flex items-start justify-between gap-4">
