@@ -5,8 +5,6 @@ import { getPM25Forecast } from "./api";
 import { resolveApiBaseUrl } from "./api/base";
 import { Card, CardContent } from "./components/ui/card";
 import DashboardHero from "./components/DashboardHero.jsx";
-import safeMascot from "../picture/safe.png";
-import notSafeMascot from "../picture/notsafe.png";
 
 const REFRESH_MS = 60_000;
 const API_BASE = resolveApiBaseUrl();
@@ -231,8 +229,6 @@ export default function Dashboard() {
   const tone = riskTone[dashboard?.safety?.risk_level] || riskTone.safe;
   const snapshot = dashboard?.snapshot;
   const sources = dashboard?.source_status || [];
-  const isSafe = dashboard?.safety?.risk_level === "safe" || !dashboard?.safety?.risk_level;
-  const mascot = isSafe ? safeMascot : notSafeMascot;
 
   const headline = useMemo(() => {
     if (!dashboard) return "Connecting to live database";
@@ -269,8 +265,8 @@ export default function Dashboard() {
 
         <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.68fr)]">
           <div className="grid gap-5">
-            <Card className={`relative h-full overflow-hidden border-white/75 bg-gradient-to-br ${tone.surface}`}>
-              <CardContent className="relative flex h-full min-h-[600px] flex-col p-5">
+            <Card className={`overflow-hidden border-white/75 bg-gradient-to-br ${tone.surface}`}>
+              <CardContent className="p-5">
                 <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                   <div className="max-w-[760px]">
                     <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.28em] text-white">
@@ -319,17 +315,8 @@ export default function Dashboard() {
                   <MetricCard icon={Waves} label="Humidity" value={snapshot?.humidity?.toFixed(1) || "--"} unit="%" accent="from-emerald-400 to-cyan-500" />
                 </div>
 
-                <div className="pointer-events-none absolute bottom-[8.2rem] left-30 z-10 hidden h-[600px] w-[110%] items-center justify-center md:flex xl:bottom-[9.6rem] xl:h-[500px]">
-                  <img
-                    src={mascot}
-                    alt={isSafe ? "Safe air character" : "Not safe air character"}
-                    className="h-full w-auto max-w-full object-contain drop-shadow-[0_24px_42px_rgba(15,23,42,0.13)]"
-                  />
-                </div>
-                <div className="min-h-[230px] flex-1" />
-
                 {dashboard?.trend?.weather_summary || dashboard?.trend?.weather_outlook ? (
-                  <div className="relative z-20 mt-auto rounded-[1.25rem] border border-slate-200/80 bg-white/78 px-4 py-3 text-sm leading-6 text-slate-600 shadow-[0_14px_34px_rgba(15,23,42,0.05)] backdrop-blur-md">
+                  <div className="mt-4 rounded-[1.25rem] border border-slate-200/80 bg-white/72 px-4 py-3 text-sm leading-6 text-slate-600">
                     <div className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Weather insight</div>
                     {dashboard?.trend?.weather_summary ? <div className="mt-2">{dashboard.trend.weather_summary}</div> : null}
                     {dashboard?.trend?.weather_outlook ? <div className="mt-1.5 font-semibold text-slate-800">{dashboard.trend.weather_outlook}</div> : null}
