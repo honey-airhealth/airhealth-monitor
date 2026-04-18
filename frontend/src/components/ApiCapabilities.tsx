@@ -23,7 +23,7 @@ const capabilities = [
   {
     icon: Clock,
     question: 'When does air quality become most concerning?',
-    answer: 'Identify critical time periods throughout the day for specific locations',
+    answer: 'Summarize worst hours of day from recent PM2.5, PM10, MQ-9, temperature, and humidity records',
     color: 'from-blue-500 to-cyan-500',
   },
   {
@@ -34,8 +34,8 @@ const capabilities = [
   },
   {
     icon: BarChart3,
-    question: 'What are the long-term trends?',
-    answer: 'Monitor changes over time with comprehensive trend analysis dashboards',
+    question: 'What changed over the selected period?',
+    answer: 'Review hourly or daily history for PM2.5, PM10, MQ-9, temperature, humidity, wind, and Google Trends records',
     color: 'from-indigo-500 to-purple-500',
   },
 ];
@@ -52,7 +52,7 @@ const outputs = [
   },
   {
     name: 'Time-Series Charts',
-    desc: 'Interactive charts showing every sensor reading across time.',
+    desc: 'Hourly and daily averages for sensor readings across selected time windows.',
     Icon: LineChart,
     iconBg: 'from-sky-500 to-blue-600',
     iconShadow: 'rgba(59,130,246,0.3)',
@@ -70,7 +70,7 @@ const outputs = [
   },
   {
     name: 'Trend Dashboards',
-    desc: 'Long-term monitoring panels for sustained environmental trends.',
+    desc: 'Statistic panels for history, descriptive summaries, wind speed, and daily dust levels.',
     Icon: LayoutDashboard,
     iconBg: 'from-violet-500 to-purple-600',
     iconShadow: 'rgba(139,92,246,0.3)',
@@ -88,11 +88,11 @@ const outputs = [
   },
   {
     name: 'Forecast Summaries',
-    desc: 'Short-horizon forecasts and plain-language health recommendations.',
+    desc: 'Short-horizon PM2.5, temperature, and humidity forecasts from recent trend and weather context.',
     Icon: Sparkles,
     iconBg: 'from-indigo-500 to-blue-700',
     iconShadow: 'rgba(99,102,241,0.3)',
-    tag: 'AI-powered',
+    tag: 'Forecast',
     tagColor: 'bg-indigo-50 text-indigo-600 border-indigo-200',
   },
 ];
@@ -242,7 +242,7 @@ export function ApiCapabilities() {
 
             {/* footer */}
             <p className="relative text-center text-white/25 mt-6 text-[11px] tracking-wide">
-              Designed for everyone — from casual users to production data pipelines
+              Built for exploring the AirHealth dashboard, statistics, analytics, forecasts, and AI chat views
             </p>
           </div>
         </div>
