@@ -30,7 +30,7 @@ Rather than exposing raw numbers, AirHealth Monitor transforms sensor readings i
 
 | Module   | Sensor Name                        | Qty | Measures |
 |----------|------------------------------------|-----|----------|
-| PMS7003  | PM2.5 Dust Sensor                  | 1×  | Fine particulate matter (PM2.5) concentration |
+| PMS7003  | PM2.5 / PM10 Dust Sensor           | 1×  | Fine and coarse particulate matter (PM2.5, PM10) concentration |
 | KY-015   | Temperature & Humidity Sensor      | 1×  | Ambient temperature and relative humidity |
 | MQ-9     | Carbon Monoxide (CO) Sensor        | 1×  | CO concentration from exhaust / incomplete combustion |
 | —        | Automatic Timestamp Logger         | —   | Exact date and time of every reading |
@@ -51,22 +51,34 @@ The API delivers processed, health-relevant outputs rather than raw measurements
 
 ### Key Questions Answered
 
-- What is the **current health risk score** based on live PM2.5, CO, temperature, humidity, and official AQI data?
-- Over the past **7 days**, how have PM2.5 and CO spikes related to illness-related search trends?
-- What is the **predicted discomfort index** based on current environmental conditions?
+- What is the **current health risk score** based on live PM2.5, PM10, CO, temperature, humidity, and official PM2.5 data?
+- Over the past **7 days**, how have PM2.5, PM10, and CO changes related to illness-related search trends?
+- What do **recent weather conditions** such as rain and wind suggest about short-term PM2.5 behavior?
 - At what **times of day** does air quality become most concerning in a specific location?
-- How do **local sensor readings compare** with official nearby air-quality reports?
+- How do **local PMS7003 readings compare** with nearby official PM2.5 measurements?
+- What is the **next 6-12 hour forecast** for PM2.5, temperature, and humidity?
+
+### Core Features
+
+- Live dashboard for PM2.5, PM10, MQ-9, temperature, humidity, official PM2.5, and source freshness
+- Health risk scoring with PM2.5, PM10, CO/MQ-9, temperature, humidity, and official reference data
+- Historical charts for PM2.5, PM10, temperature, humidity, and MQ-9 trends
+- Correlation and time-series analysis against Google Trends health keywords
+- Sensor validation against official PM2.5 reference stations
+- Weather-assisted interpretation using precipitation, weather code, and wind speed from Open-Meteo
+- Forecast page for short-horizon PM2.5, temperature, and humidity outlooks
+- AI chat with live environmental context for practical first-care guidance
 
 ### Output Formats
 
 | Format | Description |
 |--------|-------------|
 | Real-time health risk indicator | Instant summary of current environmental risk level |
-| Time-series charts | PM2.5 and CO readings plotted against health-search interest |
+| Time-series charts | PM2.5, PM10, and CO readings plotted against health-search interest and weather context |
 | Hourly / daily heatmaps | Most critical periods of poor air quality at a glance |
-| Trend analysis dashboard | Long-term monitoring of environmental changes |
-| Correlation graphs | Relationships among PM2.5, CO, humidity, temperature, and illness signals |
-| Predictive summaries | Estimated discomfort or health-concern levels based on current trends |
+| Trend analysis dashboard | Long-term monitoring of environmental and comfort changes |
+| Correlation graphs | Relationships among PM2.5, PM10, CO, humidity, temperature, and illness signals |
+| Forecast views | Short-horizon forecasts for PM2.5, temperature, and humidity using recent trend and weather context |
 
 ---
 
@@ -88,6 +100,7 @@ Then open:
 - Backend health: `http://localhost:8000/health`
 - Backend docs: `http://localhost:8000/docs`
 - Node-RED: `http://localhost:1880`
+- Forecast page: `http://localhost:5173/forecast`
 
 ### Seed 7 days of test data for Docker Compose
 
@@ -161,7 +174,21 @@ Important variables used by this project:
 - `VITE_API_BASE_URL` for frontend-to-backend requests
 - `COMPOSE_DB_*`, `COMPOSE_MYSQL_ROOT_PASSWORD`, and `TZ` for Docker Compose
 
-Keep real secrets only in `.env` and do not commit them.
+### Get a Gemini API key
+
+This project reads `GEMINI_API_KEY` from `.env` for the AI chat endpoint.
+
+1. Open Google AI Studio API Keys: `https://aistudio.google.com/apikey`
+2. Sign in with your Google account.
+3. Create a key in an existing project, or create/import a project first if AI Studio asks for one.
+4. Copy the generated key.
+5. Put it in your local `.env`:
+
+```env
+GEMINI_API_KEY=your-real-api-key
+```
+
+6. Restart the backend after changing `.env`.
 
 ### Frontend and backend together without Docker
 
@@ -209,7 +236,19 @@ Open:
 - `GET /api/v1/integration/history`
 - `GET /api/v1/integration/statistic/google-trends-keywords`
 - `GET /api/v1/integration/statistic/wind-speed`
+- `GET /api/v1/integration/forecast`
+- `GET /api/v1/integration/forecast/pm25`
 - `POST /api/v1/integration/ai-chat`
+
+### Frontend routes
+
+- `/`
+- `/dashboard`
+- `/statistic`
+- `/visualization`
+- `/forecast`
+- `/suggestion`
+- `/ai`
 
 ### AirHealth AI Chat API
 
@@ -242,6 +281,7 @@ Response:
   "generated_at": "2026-04-18T10:00:00",
   "snapshot": {
     "pm2_5": 42.0,
+    "pm10": 70.0,
     "mq9_raw": 480.0,
     "temperature": 30.0,
     "humidity": 62.0,
