@@ -23,7 +23,7 @@ const capabilities = [
   {
     icon: Clock,
     question: 'When does air quality become most concerning?',
-    answer: 'Identify critical time periods throughout the day for specific locations',
+    answer: 'Identify which hours of the day consistently show the worst air quality conditions from historical sensor data',
     color: 'from-blue-500 to-cyan-500',
   },
   {
@@ -61,7 +61,7 @@ const outputs = [
   },
   {
     name: 'Hourly Heatmaps',
-    desc: 'Spot pollution hotspots visualized by hour and day of week.',
+    desc: 'PM2.5 intensity visualized by hour of day and day of week to reveal temporal patterns.',
     Icon: Map,
     iconBg: 'from-amber-400 to-orange-500',
     iconShadow: 'rgba(245,158,11,0.3)',
