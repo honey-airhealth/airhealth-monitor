@@ -21,7 +21,7 @@ const METRICS = [
   { key: 'pm10', dataKey: 'pm10', label: 'PM10 (µg/m³)', color: '#7c3aed' },
   { key: 'temp', dataKey: 'temp', label: 'Temp (°C)',      color: '#f97316' },
   { key: 'hum',  dataKey: 'hum',  label: 'Humidity (%)',   color: '#10b981' },
-  { key: 'co',   dataKey: 'co',   label: 'CO',             color: '#ef4444' },
+  { key: 'co',   dataKey: 'co',   label: 'CO (ppm)',       color: '#ef4444' },
 ]
 
 function SegmentedControl({ options, value, onChange }) {

@@ -14,7 +14,7 @@ const timeRanges = [
 const pollutants = {
   pm25: { label: 'PM2.5', unit: 'ug/m3', color: '#378ADD' },
   pm10: { label: 'PM10', unit: 'ug/m3', color: '#7C3AED' },
-  co: { label: 'CO', unit: '', color: '#E24B4A' },
+  co: { label: 'CO', unit: 'ppm', color: '#E24B4A' },
 }
 
 const keywords = {

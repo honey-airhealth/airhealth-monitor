@@ -1127,7 +1127,7 @@ def v4_radar_pollutant(
     # Reference max for normalization (domain-appropriate for Thai climate)
     axes_cfg = [
         ("pm25",  "PM2.5",       "µg/m³",  pm25_today,  pm25_week,  100.0),
-        ("co",    "CO",          "",        co_today,    co_week,    800.0),
+        ("co",    "CO",          "ppm",     co_today,    co_week,    800.0),
         ("temp",  "Temperature", "°C",      temp_today,  temp_week,  45.0),
         ("hum",   "Humidity",    "%",       hum_today,   hum_week,   100.0),
         ("wind",  "Wind",        "km/h",    wind_today,  wind_week,  30.0),
@@ -1549,7 +1549,7 @@ def statistic_1_sensor_descriptive(
         ("pm25", "PM2.5", "µg/m³", "pms7003_readings", "pm2_5", "recorded_at"),
         ("temp", "Temp", "°C", "ky015_readings", "temperature", "recorded_at"),
         ("hum", "Humidity", "%", "ky015_readings", "humidity", "recorded_at"),
-        ("co", "CO", "", "mq9_readings", "mq9_raw", "recorded_at"),
+        ("co", "CO", "ppm", "mq9_readings", "mq9_raw", "recorded_at"),
     ]
 
     metrics = []
@@ -2090,7 +2090,7 @@ def airhealth_ai_chat(payload: AIChatRequest, conn=Depends(get_db)):
         "Live AirHealth sensor context:",
         f"- PM2.5: {snapshot.get('pm2_5', 'unknown')} ug/m3",
         f"- PM10: {snapshot.get('pm10', 'unknown')} ug/m3",
-        f"- CO: {snapshot.get('mq9_raw', 'unknown')}",
+        f"- CO: {snapshot.get('mq9_raw', 'unknown')} ppm",
         f"- Temperature: {snapshot.get('temperature', 'unknown')} C",
         f"- Humidity: {snapshot.get('humidity', 'unknown')}%",
         f"- Official PM2.5: {snapshot.get('official_pm25', 'unknown')} ug/m3",

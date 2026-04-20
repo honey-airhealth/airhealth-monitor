@@ -12,7 +12,7 @@ const SOURCE_OPTIONS = ["PMS7003", "KY-015", "MQ-9", "Open-Meteo", "Official PM2
 const DASHBOARD_RETRY_DELAYS = [0, 600, 1400];
 
 const displaySourceName = (source) => (source === "MQ-9" ? "CO" : source);
-const displayColumnName = (column) => (column === "mq9_raw" ? "CO" : column);
+const displayColumnName = (column) => (column === "mq9_raw" ? "CO (ppm)" : column);
 
 const riskTone = {
   safe: {
@@ -313,7 +313,7 @@ export default function Dashboard() {
                 <div className="mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-5">
                   <MetricCard icon={Wind} label="PM2.5" value={snapshot?.pm2_5?.toFixed(1) || "--"} unit="ug/m3" accent="from-cyan-500 to-blue-500" />
                   <MetricCard icon={Wind} label="PM10" value={snapshot?.pm10?.toFixed(1) || "--"} unit="ug/m3" accent="from-violet-500 to-indigo-500" />
-                  <MetricCard icon={AlertTriangle} label="CO" value={snapshot?.mq9_raw?.toFixed(0) || "--"} unit="" accent="from-blue-500 to-indigo-500" />
+                  <MetricCard icon={AlertTriangle} label="CO" value={snapshot?.mq9_raw?.toFixed(0) || "--"} unit="ppm" accent="from-blue-500 to-indigo-500" />
                   <MetricCard icon={Thermometer} label="Temperature" value={snapshot?.temperature?.toFixed(1) || "--"} unit="°C" accent="from-orange-400 to-rose-500" />
                   <MetricCard icon={Waves} label="Humidity" value={snapshot?.humidity?.toFixed(1) || "--"} unit="%" accent="from-emerald-400 to-cyan-500" />
                 </div>

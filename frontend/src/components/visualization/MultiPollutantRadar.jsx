@@ -231,7 +231,7 @@ export default function MultiPollutantRadar() {
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 16 }}>
             <MetricCard label="PM2.5 selected" value={data.axes.find(a => a.key === 'pm25')?.today?.toFixed(1) ?? '–'} unit="µg/m³" color="#378ADD" sub={selectedLabel} />
-            <MetricCard label="CO selected" value={data.axes.find(a => a.key === 'co')?.today?.toFixed(0) ?? '–'} unit="" color="#E24B4A" sub={selectedLabel} />
+            <MetricCard label="CO selected" value={data.axes.find(a => a.key === 'co')?.today?.toFixed(0) ?? '–'} unit="ppm" color="#E24B4A" sub={selectedLabel} />
             <MetricCard label="Temp selected" value={data.axes.find(a => a.key === 'temp')?.today?.toFixed(1) ?? '–'} unit="°C" color="#BA7517" sub={selectedLabel} />
             <MetricCard label="Humidity selected" value={data.axes.find(a => a.key === 'hum')?.today?.toFixed(0) ?? '–'} unit="%" color="#0F6E56" sub={selectedLabel} />
           </div>
