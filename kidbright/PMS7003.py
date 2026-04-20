@@ -1,4 +1,4 @@
-from machine import UART, Pin
+from machine import UART, Pin, deepsleep
 import time
 import struct
 import network
@@ -23,12 +23,18 @@ def connect_mqtt():
     client = MQTTClient(
         client_id="AirHealth_PMS7003",
         server=MQTT_BROKER,
+        port=1883,
         user=MQTT_USER,
-        password=MQTT_PASS
+        password=MQTT_PASS,
+        keepalive=60
     )
-    client.connect()
-    print("MQTT connected")
-    return client
+    try:
+        client.connect()
+        print("MQTT connected")
+        return client
+    except Exception as e:
+        print("MQTT connect error:", e)
+        return None
 
 def read_pms7003():
     timeout = time.ticks_ms()
@@ -55,17 +61,31 @@ def read_pms7003():
                             return None
     return None
 
+print("Warming up PMS7003 (30s)...")
+time.sleep(30)
+
 connect_wifi()
 client = connect_mqtt()
 
-while True:
-    data = read_pms7003()
-    if data:
-        msg = ujson.dumps(data)
-        print(msg)
-        client.publish(MQTT_TOPIC, msg)
-        print("Published to AirHealth/PMS7003")
-    else:
-        print("no_data")
-    client.ping()
-    time.sleep(5)
+if client is None:
+    print("MQTT failed, sleeping...")
+    deepsleep((15 * 60 * 1000) - (30 * 1000))
+
+
+data = read_pms7003()
+if data:
+    msg = ujson.dumps(data)
+    print("Data:", msg)
+    client.publish(MQTT_TOPIC, msg)
+    print("Published to", MQTT_TOPIC)
+    time.sleep(1) 
+else:
+    print("no_data")
+
+
+client.disconnect()
+time.sleep(1)
+
+SLEEP_MS = (15 * 60 * 1000) - (30 * 1000)
+print(f"Sleeping for {SLEEP_MS // 1000}s ...")
+deepsleep(SLEEP_MS)
