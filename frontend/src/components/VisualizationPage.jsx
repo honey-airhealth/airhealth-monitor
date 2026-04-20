@@ -137,7 +137,7 @@ const pageCopy = {
     title: 'analytic',
     subtitle: 'Charts for comparing air quality readings with health-search signals.',
     badge: 'Analytic metrics',
-    path: '/visualization',
+    path: 'analytic',
     panelLabel: 'analytic panel',
     cards: analyticCards,
   },

@@ -3,29 +3,29 @@ import { Card } from './ui/card';
 
 const dataSources = [
   {
-    name: 'Google Trends API',
+    name: 'Google Trends',
     icon: TrendingUp,
     sourceType: 'Search signals',
     href: 'https://trends.google.com/trends/',
-    description: 'Monitors search interest for health-related keywords in Thailand, such as headache, cough, difficulty breathing, and PM2.5',
+    description: 'Stores health-related keyword interest used by the statistic and correlation visualizations',
     gradient: 'from-green-500 via-emerald-500 to-teal-500',
     iconBg: 'from-green-500 to-emerald-500',
   },
   {
-    name: 'IQAir / OpenAQ API',
+    name: 'Official PM2.5 Reference',
     icon: Gauge,
     sourceType: 'Official measurements',
     href: 'https://openaq.org/',
-    description: 'Provides official PM2.5 and AQI measurements from nearby monitoring stations for comparison and validation',
+    description: 'Provides official PM2.5 measurements for comparison with local PMS7003 readings',
     gradient: 'from-blue-500 via-indigo-500 to-purple-500',
     iconBg: 'from-blue-500 to-indigo-500',
   },
   {
-    name: 'OpenMeteo API',
+    name: 'Open-Meteo',
     icon: Cloud,
     sourceType: 'Weather context',
     href: 'https://open-meteo.com/',
-    description: 'Delivers additional weather information including forecasts and atmospheric conditions to support environmental interpretation',
+    description: 'Adds weather context such as rain, wind, temperature, humidity, and weather condition codes',
     gradient: 'from-indigo-500 via-purple-500 to-pink-500',
     iconBg: 'from-indigo-500 to-purple-500',
   },
@@ -54,7 +54,7 @@ export function DataSources() {
             </span>
           </h2>
           <p className="animate-fade-up mx-auto max-w-3xl text-[13px] leading-6 text-slate-600 md:text-sm" style={{ animationDelay: '0.14s' }}>
-            Enriching local sensor readings with trusted public datasets for validation, context, and deeper insights.
+            Enriching local sensor readings with the external datasets currently represented in the backend.
           </p>
         </div>
 
@@ -118,9 +118,9 @@ export function DataSources() {
                   The Power of Integration
                 </p>
                 <p className="text-[13px] leading-6 text-white/95 md:text-sm">
-                  By combining local sensor readings with wider public data, our system produces
-                  <span className="font-bold text-yellow-300"> exponentially more meaningful insights </span>
-                  than either source could provide alone.
+                  Local sensor readings are combined with weather, official PM2.5, and Google Trends records
+                  <span className="font-bold text-yellow-300"> to provide clearer context </span>
+                  for dashboards, statistics, validation, and forecasts.
                 </p>
             </div>
           </Card>

@@ -12,7 +12,7 @@ Actual table schemas:
 """
 
 from fastapi import APIRouter, Depends, Query, HTTPException
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional
 from collections import Counter
 import math
@@ -1082,33 +1082,41 @@ def v3_hourly_heatmap(days: int = Query(30, ge=7, le=90), conn=Depends(get_db)):
     )
 
 
-# Visualization API 4: Multi-pollutant radar comparing today vs 7-day weekly average.
+# Visualization API 4: Multi-pollutant radar comparing a selected day vs 7-day average.
 @router.get("/visualization/radar-pollutant", response_model=RadarResponse,
-            summary="V4: Multi-pollutant radar — today vs weekly average")
-def v4_radar_pollutant(conn=Depends(get_db)):
+            summary="V4: Multi-pollutant radar — selected day vs weekly average")
+def v4_radar_pollutant(
+    selected_date: Optional[date] = Query(None, alias="date", description="Day to inspect in YYYY-MM-DD format"),
+    conn=Depends(get_db),
+):
     cursor = conn.cursor(dictionary=True)
     now = datetime.now()
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    week_ago = now - timedelta(days=7)
+    target_date = selected_date or now.date()
+    day_start = datetime.combine(target_date, datetime.min.time())
+    day_end = day_start + timedelta(days=1)
+    week_ago = day_start - timedelta(days=7)
 
     def avg(cursor, sql, params):
         cursor.execute(sql, params)
         row = cursor.fetchone()
         return float(list(row.values())[0]) if row and list(row.values())[0] is not None else None
 
-    # Today averages (since midnight)
-    pm25_today   = avg(cursor, "SELECT AVG(pm2_5) FROM pms7003_readings WHERE recorded_at >= %s", (today_start,))
-    co_today     = avg(cursor, "SELECT AVG(mq9_raw) FROM mq9_readings WHERE recorded_at >= %s", (today_start,))
-    temp_today   = avg(cursor, "SELECT AVG(temperature) FROM ky015_readings WHERE recorded_at >= %s", (today_start,))
-    hum_today    = avg(cursor, "SELECT AVG(humidity) FROM ky015_readings WHERE recorded_at >= %s", (today_start,))
-    wind_today   = avg(cursor, "SELECT AVG(wind_speed_10m) FROM openmeteo_readings WHERE recorded_at >= %s", (today_start,))
+    day_params = (day_start, day_end)
+    week_params = (week_ago, day_start)
 
-    # Weekly averages (last 7 days)
-    pm25_week    = avg(cursor, "SELECT AVG(pm2_5) FROM pms7003_readings WHERE recorded_at >= %s", (week_ago,))
-    co_week      = avg(cursor, "SELECT AVG(mq9_raw) FROM mq9_readings WHERE recorded_at >= %s", (week_ago,))
-    temp_week    = avg(cursor, "SELECT AVG(temperature) FROM ky015_readings WHERE recorded_at >= %s", (week_ago,))
-    hum_week     = avg(cursor, "SELECT AVG(humidity) FROM ky015_readings WHERE recorded_at >= %s", (week_ago,))
-    wind_week    = avg(cursor, "SELECT AVG(wind_speed_10m) FROM openmeteo_readings WHERE recorded_at >= %s", (week_ago,))
+    # Selected day averages.
+    pm25_today = avg(cursor, "SELECT AVG(pm2_5) FROM pms7003_readings WHERE recorded_at >= %s AND recorded_at < %s", day_params)
+    co_today = avg(cursor, "SELECT AVG(mq9_raw) FROM mq9_readings WHERE recorded_at >= %s AND recorded_at < %s", day_params)
+    temp_today = avg(cursor, "SELECT AVG(temperature) FROM ky015_readings WHERE recorded_at >= %s AND recorded_at < %s", day_params)
+    hum_today = avg(cursor, "SELECT AVG(humidity) FROM ky015_readings WHERE recorded_at >= %s AND recorded_at < %s", day_params)
+    wind_today = avg(cursor, "SELECT AVG(wind_speed_10m) FROM openmeteo_readings WHERE recorded_at >= %s AND recorded_at < %s", day_params)
+
+    # Previous 7 complete days before the selected day.
+    pm25_week = avg(cursor, "SELECT AVG(pm2_5) FROM pms7003_readings WHERE recorded_at >= %s AND recorded_at < %s", week_params)
+    co_week = avg(cursor, "SELECT AVG(mq9_raw) FROM mq9_readings WHERE recorded_at >= %s AND recorded_at < %s", week_params)
+    temp_week = avg(cursor, "SELECT AVG(temperature) FROM ky015_readings WHERE recorded_at >= %s AND recorded_at < %s", week_params)
+    hum_week = avg(cursor, "SELECT AVG(humidity) FROM ky015_readings WHERE recorded_at >= %s AND recorded_at < %s", week_params)
+    wind_week = avg(cursor, "SELECT AVG(wind_speed_10m) FROM openmeteo_readings WHERE recorded_at >= %s AND recorded_at < %s", week_params)
     cursor.close()
 
     # Reference max for normalization (domain-appropriate for Thai climate)

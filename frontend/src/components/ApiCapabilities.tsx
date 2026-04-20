@@ -5,31 +5,31 @@ const capabilities = [
   {
     icon: Activity,
     question: 'What is the current health risk score?',
-    answer: 'Based on live PM2.5, CO, smoke, temperature, humidity, and official AQI data',
+    answer: 'Based on live PM2.5, PM10, MQ-9 raw, temperature, humidity, and official PM2.5 context',
     color: 'from-red-500 to-orange-500',
   },
   {
     icon: TrendingUp,
     question: 'How do environmental spikes relate to illness trends?',
-    answer: 'Compare PM2.5 and CO levels with illness-related search trends over the past 7 days',
+    answer: 'Compare pollutant readings with the Google Trends records available in the database',
     color: 'from-green-500 to-emerald-500',
   },
   {
     icon: Thermometer,
-    question: 'What is the predicted discomfort index?',
-    answer: 'Calculated from current environmental conditions and historical patterns',
+    question: 'What is the short-term forecast?',
+    answer: 'Estimate PM2.5, temperature, or humidity for the next 6 to 12 hours from recent trends and weather context',
     color: 'from-orange-500 to-yellow-500',
   },
   {
     icon: Clock,
     question: 'When does air quality become most concerning?',
-    answer: 'Identify critical time periods throughout the day for specific locations',
+    answer: 'Identify which hours of the day consistently show the worst air quality conditions from historical sensor data',
     color: 'from-blue-500 to-cyan-500',
   },
   {
     icon: Scale,
     question: 'How do local readings compare to official reports?',
-    answer: 'Validate sensor data against nearby government monitoring stations',
+    answer: 'Validate PMS7003 PM2.5 readings against the official PM2.5 reference data stored by the backend',
     color: 'from-purple-500 to-pink-500',
   },
   {
@@ -43,7 +43,7 @@ const capabilities = [
 const outputs = [
   {
     name: 'Health Risk Indicators',
-    desc: 'Live risk scores updated every minute from PM2.5, CO & AQI sensors.',
+    desc: 'Latest risk scores from PM2.5, PM10, MQ-9 raw, temperature, humidity, and reference PM2.5 data.',
     Icon: Target,
     iconBg: 'from-rose-500 to-pink-600',
     iconShadow: 'rgba(244,63,94,0.3)',
@@ -61,7 +61,7 @@ const outputs = [
   },
   {
     name: 'Hourly Heatmaps',
-    desc: 'Spot pollution hotspots visualized by hour and day of week.',
+    desc: 'PM2.5 intensity visualized by hour of day and day of week to reveal temporal patterns.',
     Icon: Map,
     iconBg: 'from-amber-400 to-orange-500',
     iconShadow: 'rgba(245,158,11,0.3)',
@@ -79,7 +79,7 @@ const outputs = [
   },
   {
     name: 'Correlation Graphs',
-    desc: 'Link pollutant spikes directly to illness-related search signals.',
+    desc: 'Compare pollutant patterns with illness-related search signals.',
     Icon: GitMerge,
     iconBg: 'from-teal-500 to-emerald-500',
     iconShadow: 'rgba(20,184,166,0.3)',
@@ -87,8 +87,8 @@ const outputs = [
     tagColor: 'bg-teal-50 text-teal-600 border-teal-200',
   },
   {
-    name: 'Predictive Summaries',
-    desc: 'AI-generated forecasts and plain-language health recommendations.',
+    name: 'Forecast Summaries',
+    desc: 'Short-horizon forecasts and plain-language health recommendations.',
     Icon: Sparkles,
     iconBg: 'from-indigo-500 to-blue-700',
     iconShadow: 'rgba(99,102,241,0.3)',
@@ -119,7 +119,7 @@ export function ApiCapabilities() {
             Intelligent <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Insights</span>
           </h2>
           <p className="text-[13px] md:text-sm leading-6 text-gray-600 max-w-2xl mx-auto">
-            Our API doesn't just deliver raw data — it generates useful interpretations and answers practical health-related questions.
+            The API returns the processed views that are available in the app, from live risk scores to statistics, validation, and forecasts.
           </p>
         </div>
         
@@ -189,7 +189,7 @@ export function ApiCapabilities() {
                 </span>
               </h3>
               <p className="mt-2.5 text-[13px] md:text-sm text-white/50 max-w-lg mx-auto leading-6">
-                Six formats crafted for clarity — from real-time dashboards to AI-driven forecasts.
+                Six formats crafted for clarity, from live dashboards to short-horizon forecasts.
               </p>
             </div>
 

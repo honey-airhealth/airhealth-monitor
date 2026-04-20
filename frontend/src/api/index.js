@@ -41,7 +41,7 @@ export const getHistory         = (hours = 168, interval = 'hourly') => api.get(
 export const getVisualizationTimeSeries = (days = 84, interval = 'daily') => api.get('/visualization/time-series', { params: { days, interval } })
 export const getCorrelationScatter = (days = 14, pollutant = 'pm25', keyword = 'illness_index', interval = 'daily') => api.get('/visualization/correlation-scatter', { params: { days, pollutant, keyword, interval } })
 export const getHourlyHeatmap     = (days = 30) => api.get('/visualization/hourly-heatmap', { params: { days } })
-export const getRadarPollutant      = ()                                          => api.get('/visualization/radar-pollutant')
+export const getRadarPollutant      = (date)                                      => api.get('/visualization/radar-pollutant', { params: date ? { date } : {} })
 export const getCorrelationMatrix   = (days = 30, keywords = 'headache,cough,breathless,allergy') => api.get('/visualization/correlation-matrix', { params: { days, keywords } })
 export const getSensorValidation    = (days = 14) => api.get('/visualization/sensor-validation', { params: { days } })
 export const getSensorDescriptive   = (hours = 168, interval = 'hourly') => api.get('/statistic/sensor-descriptive', { params: { hours, interval } })
