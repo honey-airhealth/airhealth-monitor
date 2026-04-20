@@ -1,6 +1,6 @@
 # Contributing to AirHealth Monitor
 
-Thank you for helping improve AirHealth Monitor. This guide explains how to set up the project, make changes, run checks, and submit work in a consistent way.
+Thank you for helping improve AirHealth Monitor. This guide covers contribution workflow, coding expectations, and submission standards.
 
 ## Project Scope
 
@@ -18,60 +18,15 @@ When contributing, prioritize:
 
 All contributors are expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
-## Development Setup
+## Before You Start
 
-### Backend
+Use the local setup documented in [README.md](./README.md).
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --env-file .env
-```
+Before you open a pull request:
 
-Backend docs:
-
-- `http://localhost:8000/docs`
-- `http://localhost:8000/health`
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend:
-
-- `http://localhost:5173`
-
-## Environment Variables
-
-Use `backend/.env` for local backend development.
-
-Common backend settings:
-
-```env
-ALLOWED_ORIGINS=http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173
-DB_HOST=your_db_host
-DB_PORT=3306
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-DB_NAME=your_db_name
-DB_POOL_SIZE=1
-```
-
-AirHealth AI chat settings:
-
-```env
-GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.0-flash-lite
-GEMINI_FALLBACK_MODELS=gemini-2.0-flash,gemini-2.5-flash-lite
-```
-
-Do not commit real API keys, database passwords, tokens, or private deployment details.
+- Make sure the app still runs locally.
+- Do not commit real API keys, database passwords, tokens, or private deployment details.
+- Keep changes focused on one problem or feature.
 
 ## Running Tests
 
@@ -105,6 +60,7 @@ Before opening a pull request, run the relevant tests for your change. If you ca
 - Use dependency injection for database access.
 - Avoid live network calls in tests. Mock external APIs such as Gemini, Google Trends, weather, or air-quality services.
 - Return clear HTTP errors without exposing secrets.
+- Keep seed/demo-only logic out of production routes unless there is a clear maintenance need.
 
 ### Frontend Guidelines
 
@@ -122,6 +78,16 @@ Features that mention symptoms, risk, or first-care guidance must be careful and
 - Include appropriate caution for severe symptoms.
 - Keep AI prompts focused on PM2.5, air pollution exposure, cough, headache, throat irritation, and basic care.
 - Protect user privacy and avoid sending unnecessary personal data to external services.
+
+## Pull Requests
+
+Pull requests should include:
+
+- A short summary of what changed.
+- Why the change was needed.
+- Any API, schema, or environment variable changes.
+- Screenshots for UI changes when relevant.
+- Notes about tests run, or why tests were not run.
 
 ## Commit Messages
 
@@ -147,7 +113,6 @@ Common prefixes:
 | `refactor:` | Code restructuring without behavior changes |
 | `chore:` | Maintenance |
 
-
 ## Reporting Bugs
 
 When reporting a bug, include:
@@ -160,25 +125,6 @@ When reporting a bug, include:
 - Logs or screenshots if they help explain the issue.
 
 Avoid sharing secrets in issue reports.
-
-## Suggesting Features
-
-Feature requests should explain:
-
-- The user problem.
-- The proposed workflow.
-- What data sources or API endpoints are affected.
-- Any safety, privacy, or reliability concerns.
-
-## Security and Secrets
-
-If you accidentally expose a secret:
-
-1. Revoke or rotate it immediately.
-2. Remove it from the codebase.
-3. Tell maintainers what was exposed and where.
-
-Never paste real API keys, database credentials, or private user data into issues, pull requests, screenshots, or chat logs.
 
 ## Questions?
 

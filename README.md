@@ -85,6 +85,8 @@ The API delivers processed, health-relevant outputs rather than raw measurements
 
 This project is set up for local development only.
 
+For contribution workflow, commit format, and PR expectations, see [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 ### Option 1: Run backend only on your machine
 
 Use this if you want to work on the FastAPI app directly.
