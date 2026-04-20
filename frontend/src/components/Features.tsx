@@ -5,14 +5,14 @@ const features = [
   {
     icon: Shield,
     title: 'Real-Time Health Risk Indicators',
-    description: 'Health risk scoring from the latest PM2.5, PM10, MQ-9 raw, temperature, humidity, and official PM2.5 context.',
+    description: 'Health risk scoring from the latest PM2.5, PM10, CO, temperature, humidity, and official PM2.5 context.',
     gradient: 'from-emerald-500 to-teal-500',
     bgGradient: 'from-emerald-50 to-teal-50',
   },
   {
     icon: LineChart,
     title: 'Time-Series Visualizations',
-    description: 'Compare PM2.5, PM10, MQ-9, temperature, and humidity readings with available Google Trends health-keyword data.',
+    description: 'Compare PM2.5, PM10, CO, temperature, and humidity readings with available Google Trends health-keyword data.',
     gradient: 'from-blue-500 to-indigo-500',
     bgGradient: 'from-blue-50 to-indigo-50',
   },
@@ -26,7 +26,7 @@ const features = [
   {
     icon: Brain,
     title: 'Correlation Analysis',
-    description: 'Explore relationships among PM2.5, PM10, MQ-9, humidity, temperature, and health-related search signals.',
+    description: 'Explore relationships among PM2.5, PM10, CO, humidity, temperature, and health-related search signals.',
     gradient: 'from-purple-500 to-pink-500',
     bgGradient: 'from-purple-50 to-pink-50',
   },

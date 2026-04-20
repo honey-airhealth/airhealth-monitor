@@ -5,7 +5,7 @@ const capabilities = [
   {
     icon: Activity,
     question: 'What is the current health risk score?',
-    answer: 'Based on live PM2.5, PM10, MQ-9 raw, temperature, humidity, and official PM2.5 context',
+    answer: 'Based on live PM2.5, PM10, CO, temperature, humidity, and official PM2.5 context',
     color: 'from-red-500 to-orange-500',
   },
   {
@@ -43,7 +43,7 @@ const capabilities = [
 const outputs = [
   {
     name: 'Health Risk Indicators',
-    desc: 'Latest risk scores from PM2.5, PM10, MQ-9 raw, temperature, humidity, and reference PM2.5 data.',
+    desc: 'Latest risk scores from PM2.5, PM10, CO, temperature, humidity, and reference PM2.5 data.',
     Icon: Target,
     iconBg: 'from-rose-500 to-pink-600',
     iconShadow: 'rgba(244,63,94,0.3)',

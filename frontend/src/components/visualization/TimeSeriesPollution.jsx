@@ -7,7 +7,7 @@ import { ErrorBox, Loader, MetricCard, SectionTitle } from '../api_dashboard/ui'
 const pollutants = {
   pm25: { key: 'avg_pm25', label: 'PM2.5', unit: 'ug/m3', color: '#378ADD' },
   pm10: { key: 'avg_pm10', label: 'PM10', unit: 'ug/m3', color: '#7C3AED' },
-  co: { key: 'avg_co', label: 'CO / MQ9', unit: 'raw', color: '#E24B4A' },
+  co: { key: 'avg_co', label: 'CO', unit: '', color: '#E24B4A' },
 }
 
 const keywords = {

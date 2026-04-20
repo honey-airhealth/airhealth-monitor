@@ -78,6 +78,11 @@ SOURCE_TABLE_CONFIG = {
         "order_by": "recorded_at DESC, id DESC",
         "columns": ["id", "mq9_raw", "recorded_at"],
     },
+    "CO": {
+        "table": "mq9_readings",
+        "order_by": "recorded_at DESC, id DESC",
+        "columns": ["id", "mq9_raw", "recorded_at"],
+    },
     "Open-Meteo": {
         "table": "openmeteo_readings",
         "order_by": "fetched_at DESC, id DESC",
@@ -465,7 +470,7 @@ def _calc_risk(pm25: float, pm10: float, mq9_raw: float, temp: float, humidity: 
             p25 *= scale
             p10 *= scale
 
-    # MQ9 raw → CO score (0-25 pts)
+    # CO score (0-25 pts) from the MQ-9 analog signal.
     if mq9_raw <= 200:       c = 0
     elif mq9_raw <= 500:     c = (mq9_raw - 200) / 300 * 10
     elif mq9_raw <= 1000:    c = 10 + (mq9_raw - 500) / 500 * 10
@@ -673,7 +678,7 @@ def visualization_time_series(
     interval: str = Query("daily", pattern="^(daily|weekly)$"),
     conn=Depends(get_db),
 ):
-    """Daily or weekly PM2.5/MQ9 averages aligned with Google Trends illness keywords."""
+    """Daily or weekly PM2.5/CO averages aligned with Google Trends illness keywords."""
     cursor = conn.cursor(dictionary=True)
     since = datetime.now() - timedelta(days=days)
     sensor_period = "DATE(recorded_at)" if interval == "daily" else "YEARWEEK(recorded_at, 3)"
@@ -829,7 +834,7 @@ def visualization_time_series(
     )
 
 
-# Visualization API 2: Correlation scatter plot for PM2.5 or CO/MQ9 vs Google Trends.
+# Visualization API 2: Correlation scatter plot for PM2.5 or CO vs Google Trends.
 @router.get(
     "/visualization/correlation-scatter",
     response_model=VisualizationCorrelationScatterResponse,
@@ -842,11 +847,11 @@ def visualization_correlation_scatter(
     interval: str = Query("daily", pattern="^(daily|weekly)$"),
     conn=Depends(get_db),
 ):
-    """Pair PM2.5 or MQ9 values with Google Trends health searches and test Pearson correlation."""
+    """Pair PM2.5 or CO values with Google Trends health searches and test Pearson correlation."""
     pollutant_labels = {
         "pm25": "PM2.5",
         "pm10": "PM10",
-        "co": "CO / MQ9 raw",
+        "co": "CO",
     }
     keyword_labels = {
         "illness_index": "Illness index",
@@ -1122,7 +1127,7 @@ def v4_radar_pollutant(
     # Reference max for normalization (domain-appropriate for Thai climate)
     axes_cfg = [
         ("pm25",  "PM2.5",       "µg/m³",  pm25_today,  pm25_week,  100.0),
-        ("co",    "CO / MQ9",    "raw",     co_today,    co_week,    800.0),
+        ("co",    "CO",          "",        co_today,    co_week,    800.0),
         ("temp",  "Temperature", "°C",      temp_today,  temp_week,  45.0),
         ("hum",   "Humidity",    "%",       hum_today,   hum_week,   100.0),
         ("wind",  "Wind",        "km/h",    wind_today,  wind_week,  30.0),
@@ -1239,7 +1244,7 @@ def v5_correlation_matrix(
     SENSOR_VARS = [
         MatrixVariable(key="pm25",  label="PM2.5",    group="sensor"),
         MatrixVariable(key="pm10",  label="PM10",     group="sensor"),
-        MatrixVariable(key="co",    label="CO / MQ9", group="sensor"),
+        MatrixVariable(key="co",    label="CO", group="sensor"),
         MatrixVariable(key="temp",  label="Temp",     group="sensor"),
         MatrixVariable(key="humid", label="Humid",    group="sensor"),
     ]
@@ -1414,7 +1419,7 @@ def live_dashboard(hours: int = Query(24, ge=6, le=168), conn=Depends(get_db)):
 
 @router.get("/source-rows", response_model=SourceRowsResponse, summary="Paginated table rows by source")
 def get_source_rows(
-    source: str = Query(..., description="One of PMS7003, KY-015, MQ-9, Open-Meteo, Official PM2.5, Google Trends"),
+    source: str = Query(..., description="One of PMS7003, KY-015, CO, Open-Meteo, Official PM2.5, Google Trends"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     conn=Depends(get_db),
@@ -1544,7 +1549,7 @@ def statistic_1_sensor_descriptive(
         ("pm25", "PM2.5", "µg/m³", "pms7003_readings", "pm2_5", "recorded_at"),
         ("temp", "Temp", "°C", "ky015_readings", "temperature", "recorded_at"),
         ("hum", "Humidity", "%", "ky015_readings", "humidity", "recorded_at"),
-        ("co", "MQ9 raw", "", "mq9_readings", "mq9_raw", "recorded_at"),
+        ("co", "CO", "", "mq9_readings", "mq9_raw", "recorded_at"),
     ]
 
     metrics = []
@@ -1594,7 +1599,7 @@ def statistic_1_sensor_descriptive(
 
 
 # Statistic 2: Air quality history line chart — multi-metric time series.
-@router.get("/history", summary="Statistic 2: Air quality history line chart — PM2.5, temperature, humidity and MQ9 over time")
+@router.get("/history", summary="Statistic 2: Air quality history line chart — PM2.5, temperature, humidity and CO over time")
 def statistic_2_history(
     hours: int = Query(168, description="Past N hours (168=7days)"),
     interval: str = Query("hourly", description="hourly or daily"),
@@ -2085,7 +2090,7 @@ def airhealth_ai_chat(payload: AIChatRequest, conn=Depends(get_db)):
         "Live AirHealth sensor context:",
         f"- PM2.5: {snapshot.get('pm2_5', 'unknown')} ug/m3",
         f"- PM10: {snapshot.get('pm10', 'unknown')} ug/m3",
-        f"- MQ-9 raw: {snapshot.get('mq9_raw', 'unknown')}",
+        f"- CO: {snapshot.get('mq9_raw', 'unknown')}",
         f"- Temperature: {snapshot.get('temperature', 'unknown')} C",
         f"- Humidity: {snapshot.get('humidity', 'unknown')}%",
         f"- Official PM2.5: {snapshot.get('official_pm25', 'unknown')} ug/m3",

@@ -7,9 +7,9 @@ import { useRiskSnapshot } from './RiskSnapshotContext'
 export default function HealthRisk() {
   const { snapshotTimestamp, setSnapshotTimestamp } = useRiskSnapshot()
   const { data, loading, error, refetch } = useApi(() => getHealthRisk(snapshotTimestamp), [snapshotTimestamp])
-  const riskFormulaTip = 'Calculated from PM2.5, PM10, CO/MQ9, temperature, and humidity. Higher particle pollution or harsher heat/humidity raises the score.'
+  const riskFormulaTip = 'Calculated from PM2.5, PM10, CO, temperature, and humidity. Higher particle pollution or harsher heat/humidity raises the score.'
   const contributionsTip = 'Shows how much each factor contributes to the current risk score.'
-  const riskScoreHelp = 'Risk score is a 0-100 point score calculated from PM2.5, PM10, CO/MQ9, temperature, and humidity.'
+  const riskScoreHelp = 'Risk score is a 0-100 point score calculated from PM2.5, PM10, CO, temperature, and humidity.'
 
   useEffect(() => {
     if (!snapshotTimestamp && data?.timestamp) {
@@ -56,7 +56,7 @@ export default function HealthRisk() {
             </div>
             <ContribBar label="PM2.5"    value={data.contributions?.pm25}     max={32} color="#378ADD" />
             <ContribBar label="PM10"     value={data.contributions?.pm10}     max={8}  color="#7C3AED" />
-            <ContribBar label="CO / MQ9" value={data.contributions?.co}       max={25} color="#E24B4A" />
+            <ContribBar label="CO"       value={data.contributions?.co}       max={25} color="#E24B4A" />
             <ContribBar label="Heat"     value={data.contributions?.heat}     max={20} color="#EF9F27" />
             <ContribBar label="Humidity" value={data.contributions?.humidity} max={15} color="#1D9E75" />
           </div>

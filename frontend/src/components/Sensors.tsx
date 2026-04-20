@@ -27,7 +27,7 @@ const sensors = [
     code: 'MQ-9',
     name: 'MQ-9 Gas Sensor',
     icon: CloudFog,
-    description: 'Records MQ-9 raw gas readings that are used as the CO-related signal in risk and correlation views',
+    description: 'Records CO-related gas readings used in risk and correlation views',
     gradient: 'from-purple-500 to-indigo-500',
     bgGradient: 'from-purple-50 to-indigo-50',
     iconColor: 'text-purple-500',

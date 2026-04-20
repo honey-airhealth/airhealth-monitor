@@ -11,6 +11,9 @@ const API_BASE = resolveApiBaseUrl();
 const SOURCE_OPTIONS = ["PMS7003", "KY-015", "MQ-9", "Open-Meteo", "Official PM2.5", "Google Trends"];
 const DASHBOARD_RETRY_DELAYS = [0, 600, 1400];
 
+const displaySourceName = (source) => (source === "MQ-9" ? "CO" : source);
+const displayColumnName = (column) => (column === "mq9_raw" ? "CO" : column);
+
 const riskTone = {
   safe: {
     badge: "bg-emerald-500/12 text-emerald-700 ring-emerald-300/80",
@@ -97,7 +100,7 @@ function SourceItem({ source }) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-[1.6rem] border border-slate-100 bg-white/68 px-5 py-5 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
       <div>
-        <div className="text-[1.1rem] leading-none font-black tracking-[-0.04em] text-slate-800">{source.source}</div>
+        <div className="text-[1.1rem] leading-none font-black tracking-[-0.04em] text-slate-800">{displaySourceName(source.source)}</div>
         <div className="mt-2 text-sm font-semibold text-slate-500">{formatTimestamp(source.latest_at)}</div>
       </div>
       <div className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
@@ -277,7 +280,7 @@ export default function Dashboard() {
                       {headline}
                     </h1>
                     <p className="mt-3 max-w-xl text-[15px] leading-6 text-slate-600">
-                      {dashboard?.trend?.summary || "Streaming readings from PMS7003, KY-015, MQ-9, official PM2.5, Open-Meteo, and Google Trends."}
+                      {dashboard?.trend?.summary || "Streaming readings from PMS7003, KY-015, CO, official PM2.5, Open-Meteo, and Google Trends."}
                     </p>
                   </div>
 
@@ -310,7 +313,7 @@ export default function Dashboard() {
                 <div className="mt-5 grid gap-4 md:grid-cols-2 2xl:grid-cols-5">
                   <MetricCard icon={Wind} label="PM2.5" value={snapshot?.pm2_5?.toFixed(1) || "--"} unit="ug/m3" accent="from-cyan-500 to-blue-500" />
                   <MetricCard icon={Wind} label="PM10" value={snapshot?.pm10?.toFixed(1) || "--"} unit="ug/m3" accent="from-violet-500 to-indigo-500" />
-                  <MetricCard icon={AlertTriangle} label="CO / MQ9" value={snapshot?.mq9_raw?.toFixed(0) || "--"} unit="raw" accent="from-blue-500 to-indigo-500" />
+                  <MetricCard icon={AlertTriangle} label="CO" value={snapshot?.mq9_raw?.toFixed(0) || "--"} unit="" accent="from-blue-500 to-indigo-500" />
                   <MetricCard icon={Thermometer} label="Temperature" value={snapshot?.temperature?.toFixed(1) || "--"} unit="°C" accent="from-orange-400 to-rose-500" />
                   <MetricCard icon={Waves} label="Humidity" value={snapshot?.humidity?.toFixed(1) || "--"} unit="%" accent="from-emerald-400 to-cyan-500" />
                 </div>
@@ -437,7 +440,7 @@ export default function Dashboard() {
                           : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                       }`}
                     >
-                      {source}
+                      {displaySourceName(source)}
                     </button>
                   );
                 })}
@@ -447,7 +450,7 @@ export default function Dashboard() {
             <div className="relative mt-5 overflow-hidden rounded-[1.5rem] border border-slate-100 bg-slate-50/60">
               <div className="grid gap-3 border-b border-slate-100 bg-white/80 px-4 py-4 md:grid-cols-[1.15fr_1fr_auto] md:items-center">
                 <div>
-                  <div className="text-lg font-black tracking-[-0.04em] text-slate-900">{tableData?.source || selectedSource}</div>
+                  <div className="text-lg font-black tracking-[-0.04em] text-slate-900">{displaySourceName(tableData?.source || selectedSource)}</div>
                   <div className="mt-1 text-sm font-medium text-slate-500">Showing real database rows, 8 records per page.</div>
                 </div>
                 <div className="text-sm font-semibold text-slate-500">
@@ -466,7 +469,7 @@ export default function Dashboard() {
 
               <div className="hidden gap-4 bg-slate-50 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400 md:grid" style={{ gridTemplateColumns: `repeat(${tableData?.columns?.length || 1}, minmax(0, 1fr))` }}>
                 {(tableData?.columns || []).map((column) => (
-                  <div key={column}>{column}</div>
+                  <div key={column}>{displayColumnName(column)}</div>
                 ))}
               </div>
 

@@ -80,7 +80,7 @@ const statisticCards = [
     // Statistic 1 shows descriptive statistics for all sensor data in the selected range.
     shortLabel: 'Static 1',
     title: 'Sensor data descriptive',
-    description: 'Average, SD, Max and Min for PM2.5, temperature, humidity and MQ9 raw.',
+    description: 'Average, SD, Max and Min for PM2.5, temperature, humidity and CO.',
     component: SensorDataDescriptive,
   },
   {
@@ -88,7 +88,7 @@ const statisticCards = [
     // Statistic 2 shows air-quality history as a line chart.
     shortLabel: 'Static 2',
     title: 'Air quality history',
-    description: 'Line chart showing longer-range PM2.5, temperature, humidity and MQ9 raw — switch between hourly and daily resolution.',
+    description: 'Line chart showing longer-range PM2.5, temperature, humidity and CO — switch between hourly and daily resolution.',
     component: AirQualityHistory,
   },
   {
