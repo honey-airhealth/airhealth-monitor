@@ -47,14 +47,6 @@ Frontend:
 
 - `http://localhost:5173`
 
-### Docker Compose
-
-```bash
-docker compose up --build
-```
-
-This starts the frontend, backend, MySQL, and Node-RED stack.
-
 ## Environment Variables
 
 Use `backend/.env` for local backend development.

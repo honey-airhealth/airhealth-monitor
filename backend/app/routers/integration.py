@@ -21,7 +21,6 @@ import numpy as np
 import requests
 
 from app.store import get_db
-from app.seed import seed_test_data
 from app.models import (
     AIChatRequest,
     AIChatResponse,
@@ -46,7 +45,6 @@ from app.models import (
     ForecastResponse,
     PM25ForecastPoint,
     PM25ForecastResponse,
-    SeedTestDataResponse,
     SensorValidationPoint,
     SensorValidationResponse,
     WeeklySummaryDay,
@@ -60,9 +58,7 @@ from app.models import (
     StatisticGoogleTrendsResponse,
     RiskLevel,
     TrendDirection,
-    SensorReading,
 )
-from app.store import reading_store
 
 router = APIRouter(prefix="/integration", tags=["Data Integration"])
 
@@ -164,28 +160,6 @@ def _ai_snapshot_context(conn) -> dict:
         }
     except HTTPException:
         return {}
-
-
-def _sync_in_memory_readings(snapshot: dict) -> None:
-    recorded_at = snapshot["recorded_at"]
-    reading_store.upsert(SensorReading(
-        sensor_name="PMS7003",
-        pm2_5=int(round(snapshot["pm2_5"])),
-        pm10=int(round(snapshot["pm10"])),
-        timestamp=recorded_at,
-    ))
-    reading_store.upsert(SensorReading(
-        sensor_name="KY015",
-        temperature=float(snapshot["temperature"]),
-        humidity=float(snapshot["humidity"]),
-        timestamp=recorded_at,
-    ))
-    reading_store.upsert(SensorReading(
-        sensor_name="MQ9",
-        mq9_raw=int(round(snapshot["mq9_raw"])),
-        timestamp=recorded_at,
-    ))
-
 
 # Helpers
 def _latest_combined(conn) -> dict:
@@ -572,26 +546,6 @@ def _student_t_two_tailed_p_value(t_stat: float, df: int) -> Optional[float]:
     integral = total * h / 3
     cdf = min(0.5 + integral, 1.0)
     return max(2 * (1 - cdf), 0.0)
-
-
-@router.post(
-    "/seed-test-data",
-    response_model=SeedTestDataResponse,
-    summary="Seed deterministic test data into MySQL for local demos",
-)
-def seed_integration_test_data(
-    days: int = Query(7, ge=1, le=30),
-    clear_existing: bool = Query(True),
-    conn=Depends(get_db),
-):
-    result = seed_test_data(conn, days=days, clear_existing=clear_existing)
-    _sync_in_memory_readings(result.latest_snapshot)
-    return SeedTestDataResponse(
-        days=result.days,
-        clear_existing=result.clear_existing,
-        inserted_rows=result.inserted_rows,
-        latest_snapshot=result.latest_snapshot,
-    )
 
 
 # Suggestion S1: Current Health Risk Score

@@ -5,7 +5,6 @@
 ![React 18](https://img.shields.io/badge/React-18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![TypeScript 5](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Vite 5](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Node-RED](https://img.shields.io/badge/Node--RED-flow-BB2222?style=for-the-badge&logo=nodered&logoColor=white)
 ![MQTT](https://img.shields.io/badge/MQTT-enabled-660066?style=for-the-badge&logo=eclipsemosquitto&logoColor=white)
 
@@ -84,35 +83,11 @@ The API delivers processed, health-relevant outputs rather than raw measurements
 
 ## Run the Project
 
-This project can be run in 3 common ways depending on what you want to test.
+This project is set up for local development only.
 
-### Option 1: Run everything with Docker Compose
+### Option 1: Run backend only on your machine
 
-Use this if you want the local stack with frontend, backend, MySQL, and Node-RED.
-
-```bash
-docker compose up --build
-```
-
-Then open:
-
-- Frontend: `http://localhost:5173`
-- Backend health: `http://localhost:8000/health`
-- Backend docs: `http://localhost:8000/docs`
-- Node-RED: `http://localhost:1880`
-- Forecast page: `http://localhost:5173/forecast`
-
-### Seed 7 days of test data for Docker Compose
-
-After the containers are running, seed sample data into MySQL:
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/integration/seed-test-data?days=7&clear_existing=true"
-```
-
-### Option 2: Run backend only on your machine
-
-Use this if you want to work on the FastAPI app directly without Docker.
+Use this if you want to work on the FastAPI app directly.
 
 ```bash
 cd backend
@@ -127,24 +102,7 @@ Then open:
 - `http://127.0.0.1:8000/health`
 - `http://127.0.0.1:8000/docs`
 
-### Seed 7 days of test data for local backend
-
-If your backend can connect to MySQL through `.env`, you can seed data in 2 ways.
-
-Using the script:
-
-```bash
-cd backend
-python3 seed_mysql.py
-```
-
-Using the API:
-
-```bash
-curl -X POST "http://localhost:8000/api/v1/integration/seed-test-data?days=7&clear_existing=true"
-```
-
-### Option 3: Run frontend only on your machine
+### Option 2: Run frontend only on your machine
 
 Use this if you want to work on the React app directly.
 
@@ -172,7 +130,6 @@ Important variables used by this project:
 - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_POOL_SIZE` for local backend database access
 - `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODELS` for AI chat
 - `VITE_API_BASE_URL` for frontend-to-backend requests
-- `COMPOSE_DB_*`, `COMPOSE_MYSQL_ROOT_PASSWORD`, and `TZ` for Docker Compose
 
 ### Get a Gemini API key
 
@@ -190,7 +147,7 @@ GEMINI_API_KEY=your-real-api-key
 
 6. Restart the backend after changing `.env`.
 
-### Frontend and backend together without Docker
+### Frontend and backend together
 
 Run backend in one terminal:
 
@@ -220,7 +177,6 @@ Open:
 - `GET /health`
 - `GET /api/v1/readings/latest`
 - `POST /api/v1/readings`
-- `POST /api/v1/integration/seed-test-data`
 - `GET /api/v1/integration/health-risk`
 - `GET /api/v1/integration/worst-hours`
 - `GET /api/v1/integration/weekly-summary`

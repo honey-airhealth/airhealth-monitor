@@ -303,35 +303,6 @@ class CorrelationMatrixResponse(BaseModel):
     cells: list[MatrixCell]
 
 
-class SeedCountsResponse(BaseModel):
-    pms7003_readings: int
-    ky015_readings: int
-    mq9_readings: int
-    official_pm25: int
-    openmeteo_readings: int
-    google_trends: int
-
-
-class SeedLatestSnapshotResponse(BaseModel):
-    recorded_at: datetime
-    pm2_5: float
-    pm10: float
-    temperature: float
-    humidity: float
-    mq9_raw: float
-    official_pm25: float
-    openmeteo_temperature: float
-    openmeteo_humidity: float
-
-
-class SeedTestDataResponse(BaseModel):
-    ok: bool = True
-    days: int
-    clear_existing: bool
-    inserted_rows: SeedCountsResponse
-    latest_snapshot: SeedLatestSnapshotResponse
-
-
 class SensorValidationPoint(BaseModel):
     period: str
     sensor_pm25: Optional[float] = None

@@ -40,7 +40,7 @@ Examples of security issues that should be reported privately:
 - Endpoints that leak internal errors, environment variables, credentials, or private infrastructure details.
 - Weak defaults that would be dangerous in a shared or public deployment.
 - AI chat behavior that leaks prompts, secrets, internal data, or gives unsafe health guidance.
-- Dependency vulnerabilities that affect the backend, frontend, Docker images, or Node-RED runtime.
+- Dependency vulnerabilities that affect the backend, frontend, or Node-RED runtime.
 - Data integrity issues that allow forged, misleading, or corrupted sensor readings.
 
 For general bugs, feature requests, or documentation corrections that do not expose users or systems to risk, use the normal contribution workflow in [CONTRIBUTING.md](./CONTRIBUTING.md).
@@ -53,7 +53,6 @@ Sensitive values include:
 
 - `GEMINI_API_KEY`
 - `DB_HOST`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME`
-- MySQL root passwords and Docker Compose database passwords
 - External API keys for air-quality, weather, trends, or AI services
 - Private sensor locations, private MQTT broker details, and private deployment URLs
 
@@ -68,13 +67,13 @@ Do not rely on deleting a commit alone. Assume exposed secrets are compromised.
 
 ## Deployment Guidance
 
-The default Docker Compose values are intended for local development. Before using the project in a shared network, classroom demo, public server, or production-like environment:
+Before using the project in a shared network, classroom demo, public server, or production-like environment:
 
 - Replace all default database passwords.
 - Restrict `ALLOWED_ORIGINS` to trusted frontend origins.
 - Avoid exposing MySQL, Node-RED, or backend admin surfaces to the public internet.
 - Put public deployments behind HTTPS and an appropriate reverse proxy or gateway.
-- Keep backend, frontend, Docker images, and Node-RED dependencies updated.
+- Keep backend, frontend, and Node-RED dependencies updated.
 - Store environment variables outside source control.
 - Review database access and backups for sensitive data.
 - Avoid sending unnecessary personal data or precise private locations to external APIs.
