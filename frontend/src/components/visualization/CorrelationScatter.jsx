@@ -63,6 +63,10 @@ function SegmentedControl({ options, value, onChange }) {
   )
 }
 
+function pollutantButtonLabel(item) {
+  return item.unit ? `${item.label} (${item.unit})` : item.label
+}
+
 function KeywordMenu({ value, onChange }) {
   const active = keywords[value] || keywords.illness_index
 
@@ -161,7 +165,7 @@ export default function CorrelationScatter() {
       <SectionTitle action={
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end' }}>
           <SegmentedControl options={timeRanges} value={days} onChange={setDays} />
-          <SegmentedControl options={Object.entries(pollutants).map(([value, item]) => ({ value, label: item.label }))} value={pollutant} onChange={setPollutant} />
+          <SegmentedControl options={Object.entries(pollutants).map(([value, item]) => ({ value, label: pollutantButtonLabel(item) }))} value={pollutant} onChange={setPollutant} />
           <KeywordMenu value={keyword} onChange={setKeyword} />
           <button className="refresh-btn" onClick={refetch}>↺</button>
         </div>
@@ -216,7 +220,7 @@ export default function CorrelationScatter() {
 
       {!loading && !error && points.length === 0 && (
         <div style={{ fontSize: 12, color: 'var(--t3)', padding: '8px 0' }}>
-          No paired pollutant/search points are available yet.
+          No paired PM2.5, PM10, or CO (ppm) / Google Trends points are available yet.
         </div>
       )}
     </div>

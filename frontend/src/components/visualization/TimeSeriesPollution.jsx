@@ -298,7 +298,7 @@ export default function TimeSeriesPollution() {
           </div>
 
           <p style={{ marginTop: 12, color: 'var(--t2)', fontSize: 12, lineHeight: 1.6 }}>
-            Daily sensor averages are aligned with Google Trends sickness keywords.
+            Daily PM2.5, PM10, and CO (ppm) averages are aligned with Google Trends sickness keywords.
           </p>
         </>
       )}

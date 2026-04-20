@@ -62,6 +62,19 @@ from app.models import (
 
 router = APIRouter(prefix="/integration", tags=["Data Integration"])
 
+DATA_CUTOFF_END = datetime(2026, 4, 19)
+
+
+def _data_window_start(delta: timedelta) -> datetime:
+    return DATA_CUTOFF_END - delta
+
+
+def _clamp_snapshot_at(snapshot_at: Optional[datetime] = None) -> datetime:
+    if snapshot_at is None or snapshot_at >= DATA_CUTOFF_END:
+        return DATA_CUTOFF_END
+    return snapshot_at
+
+
 SOURCE_TABLE_CONFIG = {
     "PMS7003": {
         "table": "pms7003_readings",
@@ -171,13 +184,13 @@ def _latest_combined(conn) -> dict:
     """Combine latest from pms7003, ky015, mq9."""
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute("SELECT pm2_5, pm10, recorded_at FROM pms7003_readings ORDER BY recorded_at DESC LIMIT 1")
+    cursor.execute("SELECT pm2_5, pm10, recorded_at FROM pms7003_readings WHERE recorded_at < %s ORDER BY recorded_at DESC LIMIT 1", (DATA_CUTOFF_END,))
     pm = cursor.fetchone()
 
-    cursor.execute("SELECT temperature, humidity, recorded_at FROM ky015_readings ORDER BY recorded_at DESC LIMIT 1")
+    cursor.execute("SELECT temperature, humidity, recorded_at FROM ky015_readings WHERE recorded_at < %s ORDER BY recorded_at DESC LIMIT 1", (DATA_CUTOFF_END,))
     ky = cursor.fetchone()
 
-    cursor.execute("SELECT mq9_raw, recorded_at FROM mq9_readings ORDER BY recorded_at DESC LIMIT 1")
+    cursor.execute("SELECT mq9_raw, recorded_at FROM mq9_readings WHERE recorded_at < %s ORDER BY recorded_at DESC LIMIT 1", (DATA_CUTOFF_END,))
     mq = cursor.fetchone()
 
     cursor.close()
@@ -198,6 +211,7 @@ def _latest_combined(conn) -> dict:
 def _combined_at(conn, snapshot_at: Optional[datetime] = None) -> dict:
     if snapshot_at is None:
         return _latest_combined(conn)
+    snapshot_at = _clamp_snapshot_at(snapshot_at)
 
     cursor = conn.cursor(dictionary=True)
 
@@ -237,8 +251,9 @@ def _combined_at(conn, snapshot_at: Optional[datetime] = None) -> dict:
 def _get_official_pm25(conn, snapshot_at: Optional[datetime] = None) -> Optional[float]:
     cursor = conn.cursor(dictionary=True)
     if snapshot_at is None:
-        cursor.execute("SELECT pm25 FROM official_pm25 ORDER BY recorded_at DESC LIMIT 1")
+        cursor.execute("SELECT pm25 FROM official_pm25 WHERE recorded_at < %s ORDER BY recorded_at DESC LIMIT 1", (DATA_CUTOFF_END,))
     else:
+        snapshot_at = _clamp_snapshot_at(snapshot_at)
         cursor.execute(
             "SELECT pm25 FROM official_pm25 WHERE recorded_at <= %s ORDER BY recorded_at DESC LIMIT 1",
             (snapshot_at,),
@@ -255,13 +270,13 @@ def _coerce_float(value) -> Optional[float]:
 def _freshness_minutes(latest_at: Optional[datetime]) -> Optional[int]:
     if latest_at is None:
         return None
-    delta = datetime.now() - latest_at
+    delta = DATA_CUTOFF_END - latest_at
     return max(int(delta.total_seconds() // 60), 0)
 
 
 def _latest_table_timestamp(conn, table_name: str, column: str = "recorded_at") -> Optional[datetime]:
     cursor = conn.cursor(dictionary=True)
-    cursor.execute(f"SELECT MAX({column}) as latest_at FROM {table_name}")
+    cursor.execute(f"SELECT MAX({column}) as latest_at FROM {table_name} WHERE {column} < %s", (DATA_CUTOFF_END,))
     row = cursor.fetchone()
     cursor.close()
     return row["latest_at"] if row else None
@@ -376,10 +391,10 @@ def _weather_period_insight(conn, since: datetime, pm25_trend: TrendDirection) -
         """
         SELECT precipitation, weather_code
         FROM openmeteo_readings
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         ORDER BY recorded_at
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     rows = cursor.fetchall()
     cursor.close()
@@ -575,18 +590,18 @@ def q1_health_risk(timestamp: Optional[datetime] = Query(None), conn=Depends(get
 def q2_worst_hours(days: int = Query(7, le=30), conn=Depends(get_db)):
     """What are the worst hours of the day for air quality?"""
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(days=days)
+    since = _data_window_start(timedelta(days=days))
 
     cursor.execute(
         """SELECT HOUR(recorded_at) as hour, AVG(pm2_5) as avg_pm25
-           FROM pms7003_readings WHERE recorded_at >= %s
-           GROUP BY HOUR(recorded_at)""", (since,))
+           FROM pms7003_readings WHERE recorded_at >= %s AND recorded_at < %s
+           GROUP BY HOUR(recorded_at)""", (since, DATA_CUTOFF_END,))
     pm_by_hour = {r["hour"]: float(r["avg_pm25"]) for r in cursor.fetchall()}
 
     cursor.execute(
         """SELECT HOUR(recorded_at) as hour, AVG(mq9_raw) as avg_mq9
-           FROM mq9_readings WHERE recorded_at >= %s
-           GROUP BY HOUR(recorded_at)""", (since,))
+           FROM mq9_readings WHERE recorded_at >= %s AND recorded_at < %s
+           GROUP BY HOUR(recorded_at)""", (since, DATA_CUTOFF_END,))
     mq_by_hour = {r["hour"]: float(r["avg_mq9"]) for r in cursor.fetchall()}
     cursor.close()
 
@@ -610,7 +625,7 @@ def q2_worst_hours(days: int = Query(7, le=30), conn=Depends(get_db)):
 )
 def s3_weekly_summary(conn=Depends(get_db)):
     cursor = conn.cursor(dictionary=True)
-    today = datetime.now().date()
+    today = (DATA_CUTOFF_END - timedelta(days=1)).date()
     since = today - timedelta(days=6)
 
     ILLNESS_COLS = [
@@ -623,11 +638,11 @@ def s3_weekly_summary(conn=Depends(get_db)):
         """
         SELECT DATE(recorded_at) AS day_date, ROUND(AVG(pm2_5), 1) AS pm25_avg
         FROM pms7003_readings
-        WHERE DATE(recorded_at) >= %s
+        WHERE DATE(recorded_at) >= %s AND recorded_at < %s
         GROUP BY DATE(recorded_at)
         ORDER BY day_date
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     pm_by_day = {str(r["day_date"]): r["pm25_avg"] for r in cursor.fetchall()}
 
@@ -636,11 +651,11 @@ def s3_weekly_summary(conn=Depends(get_db)):
         f"""
         SELECT DATE(timestamp) AS day_date, {ill_cols_sql}
         FROM google_trends
-        WHERE DATE(timestamp) >= %s
+        WHERE DATE(timestamp) >= %s AND timestamp < %s
         GROUP BY DATE(timestamp)
         ORDER BY day_date
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     trend_by_day = {str(r["day_date"]): r for r in cursor.fetchall()}
     cursor.close()
@@ -667,20 +682,20 @@ def s3_weekly_summary(conn=Depends(get_db)):
 
 
 
-# Visualization API 1: Time-series chart for PM2.5 or CO vs Google Trends sickness keywords over weeks.
+# Visualization API 1: Time-series chart for PM2.5, PM10, or CO vs Google Trends sickness keywords over weeks.
 @router.get(
     "/visualization/time-series",
     response_model=VisualizationTimeSeriesResponse,
-    summary="Visualization 1: PM2.5 or CO vs illness keyword trends over weeks",
+    summary="Visualization 1: PM2.5, PM10, or CO vs illness keyword trends over weeks",
 )
 def visualization_time_series(
     days: int = Query(84, ge=1, le=365),
     interval: str = Query("daily", pattern="^(daily|weekly)$"),
     conn=Depends(get_db),
 ):
-    """Daily or weekly PM2.5/CO averages aligned with Google Trends illness keywords."""
+    """Daily or weekly PM2.5, PM10, and CO averages aligned with Google Trends illness keywords."""
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(days=days)
+    since = _data_window_start(timedelta(days=days))
     sensor_period = "DATE(recorded_at)" if interval == "daily" else "YEARWEEK(recorded_at, 3)"
     trend_period = "DATE(timestamp)" if interval == "daily" else "YEARWEEK(timestamp, 3)"
 
@@ -690,14 +705,14 @@ def visualization_time_series(
         FROM (
             SELECT MIN(recorded_at) as first_seen
             FROM pms7003_readings
-            WHERE recorded_at >= %s
+            WHERE recorded_at >= %s AND recorded_at < %s
             UNION ALL
             SELECT MIN(recorded_at) as first_seen
             FROM mq9_readings
-            WHERE recorded_at >= %s
+            WHERE recorded_at >= %s AND recorded_at < %s
         ) sensor_start
         """,
-        (since, since),
+        (since, DATA_CUTOFF_END, since, DATA_CUTOFF_END),
     )
     start_row = cursor.fetchone()
     aligned_since = start_row["first_sensor_at"] if start_row and start_row["first_sensor_at"] else since
@@ -709,11 +724,11 @@ def visualization_time_series(
                ROUND(AVG(pm2_5), 2) as avg_pm25,
                ROUND(AVG(pm10), 2) as avg_pm10
         FROM pms7003_readings
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         GROUP BY week_key
         ORDER BY week_key
         """,
-        (aligned_since,),
+        (aligned_since, DATA_CUTOFF_END),
     )
     pm_by_week = {str(r["week_key"]): r for r in cursor.fetchall()}
 
@@ -723,11 +738,11 @@ def visualization_time_series(
                MIN(DATE(recorded_at)) as week_start,
                ROUND(AVG(mq9_raw), 2) as avg_co
         FROM mq9_readings
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         GROUP BY week_key
         ORDER BY week_key
         """,
-        (aligned_since,),
+        (aligned_since, DATA_CUTOFF_END),
     )
     co_by_week = {str(r["week_key"]): r for r in cursor.fetchall()}
 
@@ -738,11 +753,11 @@ def visualization_time_series(
                ROUND(AVG(precipitation), 2) as avg_precipitation,
                CAST(ROUND(AVG(weather_code), 0) AS SIGNED) as weather_code
         FROM openmeteo_readings
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         GROUP BY week_key
         ORDER BY week_key
         """,
-        (aligned_since,),
+        (aligned_since, DATA_CUTOFF_END),
     )
     weather_by_week = {str(r["week_key"]): r for r in cursor.fetchall()}
 
@@ -765,11 +780,11 @@ def visualization_time_series(
                ROUND(AVG(allergy), 2) as allergy,
                ROUND(AVG(pm25), 2) as pm25_search
         FROM google_trends
-        WHERE timestamp >= %s
+        WHERE timestamp >= %s AND timestamp < %s
         GROUP BY week_key
         ORDER BY week_key
         """,
-        (aligned_since,),
+        (aligned_since, DATA_CUTOFF_END),
     )
     trends_by_week = {str(r["week_key"]): r for r in cursor.fetchall()}
     cursor.close()
@@ -834,7 +849,7 @@ def visualization_time_series(
     )
 
 
-# Visualization API 2: Correlation scatter plot for PM2.5 or CO vs Google Trends.
+# Visualization API 2: Correlation scatter plot for PM2.5, PM10, or CO vs Google Trends.
 @router.get(
     "/visualization/correlation-scatter",
     response_model=VisualizationCorrelationScatterResponse,
@@ -847,7 +862,7 @@ def visualization_correlation_scatter(
     interval: str = Query("daily", pattern="^(daily|weekly)$"),
     conn=Depends(get_db),
 ):
-    """Pair PM2.5 or CO values with Google Trends health searches and test Pearson correlation."""
+    """Pair PM2.5, PM10, or CO values with Google Trends health searches and test Pearson correlation."""
     pollutant_labels = {
         "pm25": "PM2.5",
         "pm10": "PM10",
@@ -874,19 +889,19 @@ def visualization_correlation_scatter(
         raise HTTPException(status_code=400, detail=f"Unsupported Google Trends keyword: {keyword}")
 
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(days=days)
+    since = _data_window_start(timedelta(days=days))
     sensor_period = "DATE(recorded_at)" if interval == "daily" else "YEARWEEK(recorded_at, 3)"
     trend_period = "DATE(timestamp)" if interval == "daily" else "YEARWEEK(timestamp, 3)"
 
     if pollutant in {"pm25", "pm10"}:
         cursor.execute(
-            "SELECT MIN(recorded_at) as first_sensor_at FROM pms7003_readings WHERE recorded_at >= %s",
-            (since,),
+            "SELECT MIN(recorded_at) as first_sensor_at FROM pms7003_readings WHERE recorded_at >= %s AND recorded_at < %s",
+            (since, DATA_CUTOFF_END),
         )
     else:
         cursor.execute(
-            "SELECT MIN(recorded_at) as first_sensor_at FROM mq9_readings WHERE recorded_at >= %s",
-            (since,),
+            "SELECT MIN(recorded_at) as first_sensor_at FROM mq9_readings WHERE recorded_at >= %s AND recorded_at < %s",
+            (since, DATA_CUTOFF_END),
         )
     start_row = cursor.fetchone()
     aligned_since = start_row["first_sensor_at"] if start_row and start_row["first_sensor_at"] else since
@@ -898,11 +913,11 @@ def visualization_correlation_scatter(
                    MIN(DATE(recorded_at)) as period_start,
                    ROUND(AVG(pm2_5), 2) as pollutant_value
             FROM pms7003_readings
-            WHERE recorded_at >= %s
+            WHERE recorded_at >= %s AND recorded_at < %s
             GROUP BY period
             ORDER BY period
             """,
-            (aligned_since,),
+            (aligned_since, DATA_CUTOFF_END),
         )
     elif pollutant == "pm10":
         cursor.execute(
@@ -911,11 +926,11 @@ def visualization_correlation_scatter(
                    MIN(DATE(recorded_at)) as period_start,
                    ROUND(AVG(pm10), 2) as pollutant_value
             FROM pms7003_readings
-            WHERE recorded_at >= %s
+            WHERE recorded_at >= %s AND recorded_at < %s
             GROUP BY period
             ORDER BY period
             """,
-            (aligned_since,),
+            (aligned_since, DATA_CUTOFF_END),
         )
     else:
         cursor.execute(
@@ -924,11 +939,11 @@ def visualization_correlation_scatter(
                    MIN(DATE(recorded_at)) as period_start,
                    ROUND(AVG(mq9_raw), 2) as pollutant_value
             FROM mq9_readings
-            WHERE recorded_at >= %s
+            WHERE recorded_at >= %s AND recorded_at < %s
             GROUP BY period
             ORDER BY period
             """,
-            (aligned_since,),
+            (aligned_since, DATA_CUTOFF_END),
         )
     pollutant_by_period = {str(r["period"]): r for r in cursor.fetchall()}
 
@@ -951,11 +966,11 @@ def visualization_correlation_scatter(
                ROUND(AVG(itchy_eyes), 2) as itchy_eyes,
                ROUND(AVG(pm25), 2) as pm25_search
         FROM google_trends
-        WHERE timestamp >= %s
+        WHERE timestamp >= %s AND timestamp < %s
         GROUP BY period
         ORDER BY period
         """,
-        (aligned_since,),
+        (aligned_since, DATA_CUTOFF_END),
     )
     trends_by_period = {str(r["period"]): r for r in cursor.fetchall()}
     cursor.close()
@@ -1039,7 +1054,7 @@ def visualization_correlation_scatter(
             summary="V3: Hourly PM2.5 heatmap (hour × day-of-week)")
 def v3_hourly_heatmap(days: int = Query(30, ge=7, le=90), conn=Depends(get_db)):
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(days=days)
+    since = _data_window_start(timedelta(days=days))
 
     # DAYOFWEEK: 1=Sun…7=Sat → remap to 0=Mon…6=Sun
     cursor.execute(
@@ -1049,10 +1064,10 @@ def v3_hourly_heatmap(days: int = Query(30, ge=7, le=90), conn=Depends(get_db)):
                ROUND(AVG(pm2_5), 2)                AS avg_pm25,
                COUNT(*)                            AS cnt
            FROM pms7003_readings
-           WHERE recorded_at >= %s
+           WHERE recorded_at >= %s AND recorded_at < %s
            GROUP BY day, hour
            ORDER BY day, hour""",
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     rows = cursor.fetchall()
     cursor.close()
@@ -1095,8 +1110,10 @@ def v4_radar_pollutant(
     conn=Depends(get_db),
 ):
     cursor = conn.cursor(dictionary=True)
-    now = datetime.now()
+    now = DATA_CUTOFF_END - timedelta(seconds=1)
     target_date = selected_date or now.date()
+    if target_date >= DATA_CUTOFF_END.date():
+        target_date = (DATA_CUTOFF_END - timedelta(days=1)).date()
     day_start = datetime.combine(target_date, datetime.min.time())
     day_end = day_start + timedelta(days=1)
     week_ago = day_start - timedelta(days=7)
@@ -1181,27 +1198,27 @@ def v5_correlation_matrix(
     selected_kws = [k.strip() for k in keywords.split(",") if k.strip() in KEYWORD_LABELS]
 
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(days=days)
+    since = _data_window_start(timedelta(days=days))
 
     cursor.execute("""
         SELECT DATE(recorded_at) as period, ROUND(AVG(pm2_5), 2) as v
-        FROM pms7003_readings WHERE recorded_at >= %s GROUP BY period""", (since,))
+        FROM pms7003_readings WHERE recorded_at >= %s AND recorded_at < %s GROUP BY period""", (since, DATA_CUTOFF_END))
     pm25_ser = {str(r["period"]): r["v"] for r in cursor.fetchall()}
 
     cursor.execute("""
         SELECT DATE(recorded_at) as period, ROUND(AVG(pm10), 2) as v
-        FROM pms7003_readings WHERE recorded_at >= %s GROUP BY period""", (since,))
+        FROM pms7003_readings WHERE recorded_at >= %s AND recorded_at < %s GROUP BY period""", (since, DATA_CUTOFF_END))
     pm10_ser = {str(r["period"]): r["v"] for r in cursor.fetchall()}
 
     cursor.execute("""
         SELECT DATE(recorded_at) as period, ROUND(AVG(mq9_raw), 2) as v
-        FROM mq9_readings WHERE recorded_at >= %s GROUP BY period""", (since,))
+        FROM mq9_readings WHERE recorded_at >= %s AND recorded_at < %s GROUP BY period""", (since, DATA_CUTOFF_END))
     co_ser = {str(r["period"]): r["v"] for r in cursor.fetchall()}
 
     cursor.execute("""
         SELECT DATE(recorded_at) as period,
                ROUND(AVG(temperature), 2) as temp, ROUND(AVG(humidity), 2) as humid
-        FROM ky015_readings WHERE recorded_at >= %s GROUP BY period""", (since,))
+        FROM ky015_readings WHERE recorded_at >= %s AND recorded_at < %s GROUP BY period""", (since, DATA_CUTOFF_END))
     temp_ser, humid_ser = {}, {}
     for r in cursor.fetchall():
         temp_ser[str(r["period"])] = r["temp"]
@@ -1216,7 +1233,7 @@ def v5_correlation_matrix(
                ROUND(AVG(runny_nose),2) as runny_nose, ROUND(AVG(headache),2) as headache,
                ROUND(AVG(dizziness),2) as dizziness, ROUND(AVG(nausea),2) as nausea,
                ROUND(AVG(itchy_eyes),2) as itchy_eyes, ROUND(AVG(pm25),2) as pm25_search
-        FROM google_trends WHERE timestamp >= %s GROUP BY period""", (since,))
+        FROM google_trends WHERE timestamp >= %s AND timestamp < %s GROUP BY period""", (since, DATA_CUTOFF_END))
     trends_ser = {str(r["period"]): r for r in cursor.fetchall()}
     cursor.close()
 
@@ -1306,25 +1323,25 @@ def live_dashboard(hours: int = Query(24, ge=6, le=168), conn=Depends(get_db)):
     )
 
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(hours=hours)
+    since = _data_window_start(timedelta(hours=hours))
 
     cursor.execute(
-        "SELECT pm2_5, pm10 FROM pms7003_readings WHERE recorded_at >= %s ORDER BY recorded_at",
-        (since,),
+        "SELECT pm2_5, pm10 FROM pms7003_readings WHERE recorded_at >= %s AND recorded_at < %s ORDER BY recorded_at",
+        (since, DATA_CUTOFF_END),
     )
     pm_rows = cursor.fetchall()
     pm_vals = [_coerce_float(r["pm2_5"]) or 0 for r in pm_rows]
     pm10_vals = [_coerce_float(r["pm10"]) or 0 for r in pm_rows]
 
     cursor.execute(
-        "SELECT mq9_raw FROM mq9_readings WHERE recorded_at >= %s ORDER BY recorded_at",
-        (since,),
+        "SELECT mq9_raw FROM mq9_readings WHERE recorded_at >= %s AND recorded_at < %s ORDER BY recorded_at",
+        (since, DATA_CUTOFF_END),
     )
     mq_vals = [_coerce_float(r["mq9_raw"]) or 0 for r in cursor.fetchall()]
 
     cursor.execute(
-        "SELECT temperature, humidity FROM ky015_readings WHERE recorded_at >= %s ORDER BY recorded_at",
-        (since,),
+        "SELECT temperature, humidity FROM ky015_readings WHERE recorded_at >= %s AND recorded_at < %s ORDER BY recorded_at",
+        (since, DATA_CUTOFF_END),
     )
     ky_rows = cursor.fetchall()
     temp_vals = [_coerce_float(r["temperature"]) or 0 for r in ky_rows]
@@ -1352,9 +1369,11 @@ def live_dashboard(hours: int = Query(24, ge=6, le=168), conn=Depends(get_db)):
         """
         SELECT temperature_2m, relative_humidity_2m
         FROM openmeteo_readings
+        WHERE recorded_at < %s
         ORDER BY recorded_at DESC
         LIMIT 1
-        """
+        """,
+        (DATA_CUTOFF_END,),
     )
     openmeteo = cursor.fetchone()
     cursor.close()
@@ -1399,7 +1418,7 @@ def live_dashboard(hours: int = Query(24, ge=6, le=168), conn=Depends(get_db)):
     ]
 
     return LiveDashboardResponse(
-        generated_at=datetime.now(),
+        generated_at=DATA_CUTOFF_END - timedelta(seconds=1),
         snapshot=LiveSnapshotResponse(
             recorded_at=sensor["recorded_at"],
             pm2_5=sensor["pm2_5"],
@@ -1431,7 +1450,8 @@ def get_source_rows(
     offset = (page - 1) * page_size
     cursor = conn.cursor(dictionary=True)
 
-    cursor.execute(f"SELECT COUNT(*) as total_rows FROM {config['table']}")
+    time_column = "created_at" if source == "Google Trends" else "fetched_at" if source in {"Open-Meteo", "Official PM2.5"} else "recorded_at"
+    cursor.execute(f"SELECT COUNT(*) as total_rows FROM {config['table']} WHERE {time_column} < %s", (DATA_CUTOFF_END,))
     total_rows = int(cursor.fetchone()["total_rows"])
     total_pages = max((total_rows + page_size - 1) // page_size, 1)
 
@@ -1439,10 +1459,11 @@ def get_source_rows(
         f"""
         SELECT {", ".join(config["columns"])}
         FROM {config["table"]}
+        WHERE {time_column} < %s
         ORDER BY {config["order_by"]}
         LIMIT %s OFFSET %s
         """,
-        (page_size, offset),
+        (DATA_CUTOFF_END, page_size, offset),
     )
     rows = [_serialize_row(row) for row in cursor.fetchall()]
     cursor.close()
@@ -1469,17 +1490,17 @@ def v6_sensor_validation(
     conn=Depends(get_db),
 ):
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(days=days)
+    since = _data_window_start(timedelta(days=days))
 
     cursor.execute(
         """
         SELECT DATE(recorded_at) AS period, ROUND(AVG(pm2_5), 2) AS sensor_pm25
         FROM pms7003_readings
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         GROUP BY DATE(recorded_at)
         ORDER BY period
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     sensor_by_day = {str(r["period"]): r["sensor_pm25"] for r in cursor.fetchall()}
 
@@ -1489,11 +1510,11 @@ def v6_sensor_validation(
                ROUND(AVG(pm25), 2) AS reference_pm25,
                MIN(station_name) AS station_name
         FROM official_pm25
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         GROUP BY DATE(recorded_at)
         ORDER BY period
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     ref_rows = cursor.fetchall()
     ref_by_day = {str(r["period"]): r["reference_pm25"] for r in ref_rows}
@@ -1543,7 +1564,7 @@ def statistic_1_sensor_descriptive(
 ):
     """Statistic 1: descriptive statistics for sensor readings in the selected time range."""
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(hours=hours)
+    since = _data_window_start(timedelta(hours=hours))
 
     metric_queries = [
         ("pm25", "PM2.5", "µg/m³", "pms7003_readings", "pm2_5", "recorded_at"),
@@ -1567,9 +1588,9 @@ def statistic_1_sensor_descriptive(
                 MIN({time_col}) AS period_start,
                 MAX({time_col}) AS period_end
             FROM {table}
-            WHERE {time_col} >= %s
+            WHERE {time_col} >= %s AND {time_col} < %s
             """,
-            (since,),
+            (since, DATA_CUTOFF_END),
         )
         row = cursor.fetchone() or {}
         if row.get("period_start") and (period_start is None or row["period_start"] < period_start):
@@ -1607,38 +1628,38 @@ def statistic_2_history(
 ):
     """Statistic 2: line chart data for air quality changes over time."""
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(hours=hours)
+    since = _data_window_start(timedelta(hours=hours))
     grp_fmt = "%Y-%m-%d" if interval == "daily" else "%Y-%m-%d %H:00:00"
 
     cursor.execute(f"""
         SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
                ROUND(AVG(pm2_5), 2) as avg_pm25,
                ROUND(AVG(pm10), 2) as avg_pm10
-        FROM pms7003_readings WHERE recorded_at >= %s
-        GROUP BY period ORDER BY period""", (since,))
+        FROM pms7003_readings WHERE recorded_at >= %s AND recorded_at < %s
+        GROUP BY period ORDER BY period""", (since, DATA_CUTOFF_END))
     pm_data = {r["period"]: r for r in cursor.fetchall()}
 
     cursor.execute(f"""
         SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
                ROUND(AVG(temperature), 1) as avg_temperature,
                ROUND(AVG(humidity), 1) as avg_humidity
-        FROM ky015_readings WHERE recorded_at >= %s
-        GROUP BY period ORDER BY period""", (since,))
+        FROM ky015_readings WHERE recorded_at >= %s AND recorded_at < %s
+        GROUP BY period ORDER BY period""", (since, DATA_CUTOFF_END))
     ky_data = {r["period"]: r for r in cursor.fetchall()}
 
     cursor.execute(f"""
         SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
                ROUND(AVG(mq9_raw), 2) as avg_mq9
-        FROM mq9_readings WHERE recorded_at >= %s
-        GROUP BY period ORDER BY period""", (since,))
+        FROM mq9_readings WHERE recorded_at >= %s AND recorded_at < %s
+        GROUP BY period ORDER BY period""", (since, DATA_CUTOFF_END))
     mq_data = {r["period"]: r["avg_mq9"] for r in cursor.fetchall()}
 
     cursor.execute(f"""
         SELECT DATE_FORMAT(recorded_at, '{grp_fmt}') as period,
                ROUND(AVG(precipitation), 2) as avg_precipitation,
                CAST(ROUND(AVG(weather_code), 0) AS SIGNED) as weather_code
-        FROM openmeteo_readings WHERE recorded_at >= %s
-        GROUP BY period ORDER BY period""", (since,))
+        FROM openmeteo_readings WHERE recorded_at >= %s AND recorded_at < %s
+        GROUP BY period ORDER BY period""", (since, DATA_CUTOFF_END))
     weather_data = {r["period"]: r for r in cursor.fetchall()}
     cursor.close()
 
@@ -1686,7 +1707,7 @@ def statistic_3_google_trends_keywords(
 ):
     """Statistic 3: Google Trends search keyword time series by date."""
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(days=days)
+    since = _data_window_start(timedelta(days=days))
 
     daily_columns = []
     for key, _label, column in GOOGLE_TRENDS_KEYWORDS:
@@ -1698,11 +1719,11 @@ def statistic_3_google_trends_keywords(
                COUNT(*) AS samples,
                {", ".join(daily_columns)}
         FROM google_trends
-        WHERE timestamp >= %s
+        WHERE timestamp >= %s AND timestamp < %s
         GROUP BY DATE(timestamp)
         ORDER BY period
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     rows = cursor.fetchall()
     cursor.close()
@@ -1771,7 +1792,7 @@ def statistic_4_wind_speed(
     conn=Depends(get_db),
 ):
     cursor = conn.cursor(dictionary=True)
-    since = datetime.now() - timedelta(hours=hours)
+    since = _data_window_start(timedelta(hours=hours))
     grp_fmt = "%Y-%m-%d" if interval == "daily" else "%Y-%m-%d %H:00:00"
 
     cursor.execute(
@@ -1783,11 +1804,11 @@ def statistic_4_wind_speed(
             MIN(recorded_at)                        AS period_start,
             MAX(recorded_at)                        AS period_end
         FROM openmeteo_readings
-        WHERE recorded_at >= %s AND wind_speed_10m IS NOT NULL
+        WHERE recorded_at >= %s AND recorded_at < %s AND wind_speed_10m IS NOT NULL
         GROUP BY period
         ORDER BY period
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     rows = cursor.fetchall()
 
@@ -1801,9 +1822,9 @@ def statistic_4_wind_speed(
             MIN(recorded_at)               AS period_start,
             MAX(recorded_at)               AS period_end
         FROM openmeteo_readings
-        WHERE recorded_at >= %s AND wind_speed_10m IS NOT NULL
+        WHERE recorded_at >= %s AND recorded_at < %s AND wind_speed_10m IS NOT NULL
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     summary = cursor.fetchone() or {}
     cursor.close()
@@ -1835,26 +1856,26 @@ def forecast_pm25(
     conn=Depends(get_db),
 ):
     sensor = _latest_combined(conn)
-    since = datetime.now() - timedelta(hours=base_hours)
+    since = _data_window_start(timedelta(hours=base_hours))
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
         """
         SELECT pm2_5, pm10, recorded_at
         FROM pms7003_readings
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         ORDER BY recorded_at
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     pm_rows = cursor.fetchall()
     cursor.execute(
         """
         SELECT precipitation, weather_code, wind_speed_10m
         FROM openmeteo_readings
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         ORDER BY recorded_at
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     weather_rows = cursor.fetchall()
     cursor.close()
@@ -1898,7 +1919,7 @@ def forecast_pm25(
 
     return PM25ForecastResponse(
         forecast="pm25-next-6-12h",
-        generated_at=datetime.now(),
+        generated_at=DATA_CUTOFF_END - timedelta(seconds=1),
         based_on_hours=base_hours,
         current_pm25=round(sensor["pm2_5"], 1),
         current_pm10=round(sensor["pm10"], 1),
@@ -1924,36 +1945,36 @@ def forecast_metric(
     conn=Depends(get_db),
 ):
     sensor = _latest_combined(conn)
-    since = datetime.now() - timedelta(hours=base_hours)
+    since = _data_window_start(timedelta(hours=base_hours))
     cursor = conn.cursor(dictionary=True)
     cursor.execute(
         """
         SELECT pm2_5, pm10, recorded_at
         FROM pms7003_readings
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         ORDER BY recorded_at
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     pm_rows = cursor.fetchall()
     cursor.execute(
         """
         SELECT temperature, humidity, recorded_at
         FROM ky015_readings
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         ORDER BY recorded_at
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     ky_rows = cursor.fetchall()
     cursor.execute(
         """
         SELECT precipitation, weather_code, wind_speed_10m
         FROM openmeteo_readings
-        WHERE recorded_at >= %s
+        WHERE recorded_at >= %s AND recorded_at < %s
         ORDER BY recorded_at
         """,
-        (since,),
+        (since, DATA_CUTOFF_END),
     )
     weather_rows = cursor.fetchall()
     cursor.close()
@@ -2055,7 +2076,7 @@ def forecast_metric(
         metric=metric,
         label=config["label"],
         unit=config["unit"],
-        generated_at=datetime.now(),
+        generated_at=DATA_CUTOFF_END - timedelta(seconds=1),
         based_on_hours=base_hours,
         current_value=round(config["current_value"], 1),
         current_aux_value=round(config["aux_value"], 1) if config["aux_value"] is not None else None,
@@ -2165,6 +2186,6 @@ def airhealth_ai_chat(payload: AIChatRequest, conn=Depends(get_db)):
     return AIChatResponse(
         answer=answer,
         model=used_model,
-        generated_at=datetime.now(),
+        generated_at=DATA_CUTOFF_END - timedelta(seconds=1),
         snapshot=snapshot or None,
     )

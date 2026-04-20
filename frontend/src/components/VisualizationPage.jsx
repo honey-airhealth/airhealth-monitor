@@ -34,14 +34,14 @@ const analyticCards = [
     id: 'time-series',
     shortLabel: 'V1',
     title: 'Time-series chart',
-    description: 'PM2.5 or CO compared with Google Trends sickness keywords over weekly periods.',
+    description: 'PM2.5, PM10, and CO (ppm) compared with Google Trends sickness keywords over weekly periods.',
     component: TimeSeriesPollution,
   },
   {
     id: 'correlation-scatter',
     shortLabel: 'V2',
     title: 'Correlation scatter plot',
-    description: 'Paired pollutant and Google Trends points with Pearson r and p-value.',
+    description: 'PM2.5, PM10, and CO (ppm) paired with Google Trends search keywords using Pearson r and p-value.',
     component: CorrelationScatter,
   },
   {
@@ -62,7 +62,7 @@ const analyticCards = [
     id: 'correlation-matrix',
     shortLabel: 'V5',
     title: 'Correlation matrix',
-    description: 'Pearson r between every pollutant and health keyword pair — spot which variables truly matter.',
+    description: 'Pearson r between PM2.5, PM10, CO (ppm), weather context, and Google Trends health keywords.',
     component: CorrelationMatrix,
   },
   {
