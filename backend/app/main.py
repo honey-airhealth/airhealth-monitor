@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
  
 from app.routers.readings import router as readings_router
 from app.routers.integration import router as integration_router
+from app.store import wait_for_db_ready
 import os
  
  
@@ -35,7 +36,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
  
- 
+
+@app.on_event("startup")
+def startup_checks() -> None:
+    wait_for_db_ready()
+
+
 @app.get("/health", tags=["system"])
 def health_check() -> dict[str, str]:
     return {"status": "ok"}

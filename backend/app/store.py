@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib import Path
 
 import mysql.connector
@@ -41,6 +42,8 @@ db_config = {
 }
 
 DB_POOL_SIZE = int(os.getenv("DB_POOL_SIZE", 5))
+DB_STARTUP_MAX_RETRIES = int(os.getenv("DB_STARTUP_MAX_RETRIES", 3))
+DB_STARTUP_RETRY_DELAY = float(os.getenv("DB_STARTUP_RETRY_DELAY", 1.0))
 pool = None
 
 
@@ -53,6 +56,46 @@ def get_pool():
             **db_config,
         )
     return pool
+
+
+def is_db_configured() -> bool:
+    return bool(db_config["host"] and db_config["user"] and db_config["database"])
+
+
+def verify_db_connection() -> None:
+    conn = get_pool().get_connection()
+    try:
+        conn.ping(reconnect=True, attempts=1, delay=0)
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+        finally:
+            cursor.close()
+    finally:
+        conn.close()
+
+
+def wait_for_db_ready(
+    max_retries: int = DB_STARTUP_MAX_RETRIES,
+    retry_delay: float = DB_STARTUP_RETRY_DELAY,
+) -> None:
+    if not is_db_configured():
+        return
+
+    last_error = None
+    attempts = max(max_retries, 1)
+    for attempt in range(attempts):
+        try:
+            verify_db_connection()
+            return
+        except Error as exc:
+            last_error = exc
+            if attempt < attempts - 1:
+                time.sleep(retry_delay)
+
+    if last_error is not None:
+        raise RuntimeError(f"Database unavailable during startup: {last_error.msg}") from last_error
 
 
 def get_db():
