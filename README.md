@@ -23,6 +23,18 @@ Rather than exposing raw numbers, AirHealth Monitor transforms sensor readings i
 
 ---
 
+## Database Schema
+
+![AirHealth database schema](./component/databaseschema.png)
+
+---
+
+## Presentation Slide
+
+- [AirHealth presentation slide (PDF)](./component/Airhealth.pdf)
+
+---
+
 ## Node-RED And Database
 
 - Node-RED flow: `https://iot.cpe.ku.ac.th/red/b6710545563`
