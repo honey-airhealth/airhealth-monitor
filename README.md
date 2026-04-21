@@ -23,6 +23,13 @@ Rather than exposing raw numbers, AirHealth Monitor transforms sensor readings i
 
 ---
 
+## Node-RED And Database
+
+- Node-RED flow: `https://iot.cpe.ku.ac.th/red/b6710545563`
+- phpMyAdmin database: `b6710545563`
+
+---
+
 ## Data Sources
 
 ### Primary — On-site Sensors
