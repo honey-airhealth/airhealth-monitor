@@ -106,7 +106,7 @@ This project is set up for local development only.
 
 For contribution workflow, commit format, and PR expectations, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-### Option 1: Run backend only on your machine
+### Run backend
 
 Use this if you want to work on the FastAPI app directly.
 
@@ -117,13 +117,20 @@ source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
+or
+```bash
+cd backend
+```
 
+```bash
+python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt && uvicorn app.main:app --reload
+```
 Then open:
 
 - `http://127.0.0.1:8000/health`
 - `http://127.0.0.1:8000/docs`
 
-### Option 2: Run frontend only on your machine
+### Run frontend 
 
 Use this if you want to work on the React app directly.
 
@@ -164,32 +171,6 @@ GEMINI_API_KEY=your-real-api-key
 ```
 
 6. Restart the backend after changing `.env`.
-
-### Frontend and backend together
-
-Run backend in one terminal:
-
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-Run frontend in another terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open:
-
-- Frontend: `http://localhost:5173`
-- Backend docs: `http://localhost:8000/docs`
-
 ### Current API routes
 
 - `GET /health`
