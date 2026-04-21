@@ -25,13 +25,13 @@ Rather than exposing raw numbers, AirHealth Monitor transforms sensor readings i
 
 ## Database Schema
 
-![AirHealth database schema](./component/databaseschema.png)
+![AirHealth database schema](./databaseschema.png)
 
 ---
 
 ## Presentation Slide
 
-- [AirHealth presentation slide (PDF)](./component/Airhealth.pdf)
+- [AirHealth presentation slide (PDF)](./Airhealth.pdf)
 
 ---
 
